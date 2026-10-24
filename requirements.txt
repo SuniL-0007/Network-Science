@@ -1,0 +1,13 @@
+# Core (tested on Python 3.14)
+networkx>=3.4
+numpy>=2.1
+pandas>=2.2
+scipy>=1.14
+requests>=2.32
+matplotlib>=3.9
+seaborn>=0.13
+powerlaw>=2.0
+pytest>=8.3
+
+# Baseline SIR backend (Milestone 3). Optional: tests skip the NDlib comparison without it.
+ndlib>=5.1
