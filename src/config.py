@@ -118,6 +118,37 @@ class SIRParams:
     beta_maintainer: float = 0.0
 
 
+# --------------------------------------------------------------------------- experiments
+@dataclass(frozen=True)
+class ExperimentConfig:
+    """Monte Carlo settings for RQ1-RQ3 (spec §6). Budgets are fractions of N (improvement #12)."""
+
+    n_runs: int = 100  # realisations per configuration (RQ1: per origin node)
+    seed: int = GLOBAL_SEED
+    n_jobs: int = 1
+    major_outbreak_frac: float = 0.05  # R_inf above this counts as a major outbreak
+    t80_frac: float = 0.80
+    n_boot: int = 1000
+    # RQ1: origin topology. beta_maintainer > 0 adds the credential-channel variant.
+    rq1_params: SIRParams = SIRParams()
+    rq1_beta_maintainer: tuple[float, ...] = (0.0,)
+    # RQ2: regimes x (beta, gamma) grid, outbreaks seeded from the hub origin group.
+    rq2_betas: tuple[float, ...] = (0.02, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1.0)
+    rq2_gammas: tuple[float, ...] = (0.02, 0.05, 0.1, 0.2, 0.4)
+    rq2_beta_maintainer: tuple[float, ...] = (0.0,)
+    rq2_n_runs: int = 50
+    pin_fraction: float = 0.80  # strict-lockfile regimes: share of exact-pinned edges
+    hook_reduction: float = 0.70  # scripts-disabled regimes: cut of the hook boost
+    provenance_top: float = 0.05  # hardened: provenance on the top 5% hubs ...
+    provenance_factor: float = 0.10  # ... whose stolen-token publishes succeed w.p. 0.1
+    # RQ3: interventions against a hub outbreak.
+    rq3_params: SIRParams = SIRParams()
+    rq3_budget_fracs: tuple[float, ...] = (0.001, 0.0025, 0.005, 0.01, 0.025)
+    # First tick at which reactive patching acts. A delay of 1 lets hub patching remove a hub
+    # patient zero immediately, so sweep realistic detection lags as well.
+    rq3_response_delays: tuple[int, ...] = (1, 5, 10, 20)
+
+
 # --------------------------------------------------------------------------- crawler
 DEFAULT_SEEDS = (
     "express", "react", "lodash", "chalk", "commander", "debug", "axios", "webpack",

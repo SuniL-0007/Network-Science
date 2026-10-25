@@ -11,3 +11,4 @@ results/metrics/*
 results/figures/*
 !results/**/.gitkeep
 *.md
+*.log

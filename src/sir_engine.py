@@ -321,17 +321,81 @@ PatientZero = Sequence | Callable[[np.random.Generator], Sequence]
 _WORKER: dict = {}
 
 
-def _init_worker(model, params, policy, reducer):
-    _WORKER.update(model=model, params=params, policy=policy, reducer=reducer,
-                   edge_beta=model.edge_betas(params))
+@dataclass(frozen=True, eq=False)
+class MCJob:
+    """One Monte Carlo configuration: `n_runs` realisations sharing params/policy/model.
+
+    `patient_zero` and `immunized` are node lists or functions `rng -> nodes` drawn per run.
+    Run i uses child i of `SeedSequence(seed)`, so jobs with the same seed are paired: run i
+    gets the same origin draw and random stream regardless of strategy, model or `n_jobs`.
+    """
+
+    params: SIRParams
+    patient_zero: PatientZero
+    n_runs: int = 100
+    seed: int = 0
+    immunized: Sequence | Callable[[np.random.Generator], Sequence] = ()
+    policy: PatchPolicy | None = None
+    model_key: str = "base"
+    tag: dict = field(default_factory=dict)  # labels for downstream tables
+
+
+def _init_worker(models, policies, reducer):
+    _WORKER.clear()
+    _WORKER.update(models=models, policies=policies, reducer=reducer, betas={})
 
 
 def _run_one(task):
-    seed_seq, pz, immunized = task
+    model_key, params, policy_id, seed_seq, pz, immunized = task
     w = _WORKER
-    res = simulate(w["model"], w["params"], pz, np.random.default_rng(seed_seq),
-                   immunized, w["policy"], w["edge_beta"])
+    model = w["models"][model_key]
+    betas = w["betas"]
+    if (model_key, params) not in betas:
+        betas[(model_key, params)] = model.edge_betas(params)
+    res = simulate(model, params, pz, np.random.default_rng(seed_seq), immunized,
+                   w["policies"].get(policy_id), betas[(model_key, params)])
     return w["reducer"](res) if w["reducer"] else res
+
+
+def run_batch(
+    models: dict[str, ContagionModel] | ContagionModel,
+    jobs: Sequence[MCJob],
+    reducer: Callable[[SimulationResult], object] | None = None,
+    n_jobs: int = 1,
+) -> list[list]:
+    """Run every job through one worker pool; returns one result list per job.
+
+    Models and policies are shipped to each worker once; tasks only carry seeds and node
+    indices. `reducer` (picklable when n_jobs > 1) summarises each result in the worker.
+    """
+    models = {"base": models} if isinstance(models, ContagionModel) else models
+    policies = {id(j.policy): j.policy for j in jobs if j.policy is not None}
+    tasks, owner = [], []
+    for j, job in enumerate(jobs):
+        model = models[job.model_key]
+        for child in np.random.SeedSequence(job.seed).spawn(job.n_runs):
+            pz_seq, sim_seq, imm_seq = child.spawn(3)
+            pz = job.patient_zero(np.random.default_rng(pz_seq)) if callable(job.patient_zero) else job.patient_zero
+            imm = job.immunized(np.random.default_rng(imm_seq)) if callable(job.immunized) else job.immunized
+            tasks.append((job.model_key, job.params, id(job.policy) if job.policy else None,
+                          sim_seq, _as_idx(model, pz), _as_idx(model, imm)))
+            owner.append(j)
+
+    if n_jobs == 1:
+        _init_worker(models, policies, reducer)
+        try:
+            flat = [_run_one(t) for t in tasks]
+        finally:
+            _WORKER.clear()
+    else:
+        with ProcessPoolExecutor(n_jobs, initializer=_init_worker,
+                                 initargs=(models, policies, reducer)) as pool:
+            flat = list(pool.map(_run_one, tasks, chunksize=max(1, len(tasks) // (8 * n_jobs))))
+
+    out: list[list] = [[] for _ in jobs]
+    for j, r in zip(owner, flat):
+        out[j].append(r)
+    return out
 
 
 def run_monte_carlo(
@@ -345,28 +409,9 @@ def run_monte_carlo(
     reducer: Callable[[SimulationResult], object] | None = None,
     n_jobs: int = 1,
 ) -> list:
-    """Run `n_runs` independent realisations.
-
-    `patient_zero` is a fixed node list or a function `rng -> nodes` drawn per run. Run i
-    uses child i of `SeedSequence(seed)`, so results are identical for any `n_jobs` and the
-    same seed gives paired runs across strategies. `reducer` (a picklable top-level function
-    when n_jobs > 1) maps each result to a smaller summary inside the worker.
-    """
-    tasks = []
-    for child in np.random.SeedSequence(seed).spawn(n_runs):
-        pz_seq, sim_seq = child.spawn(2)
-        pz = patient_zero(np.random.default_rng(pz_seq)) if callable(patient_zero) else patient_zero
-        tasks.append((sim_seq, _as_idx(model, pz), _as_idx(model, immunized)))
-
-    if n_jobs == 1:
-        _init_worker(model, params, policy, reducer)
-        try:
-            return [_run_one(t) for t in tasks]
-        finally:
-            _WORKER.clear()
-    with ProcessPoolExecutor(n_jobs, initializer=_init_worker,
-                             initargs=(model, params, policy, reducer)) as pool:
-        return list(pool.map(_run_one, tasks, chunksize=max(1, n_runs // (4 * n_jobs))))
+    """Run `n_runs` independent realisations of one configuration (see `MCJob`)."""
+    job = MCJob(params, patient_zero, n_runs, seed, immunized, policy)
+    return run_batch(model, [job], reducer, n_jobs)[0]
 
 
 # =========================================================================== ndlib baseline
