@@ -10,5 +10,5 @@ data/processed/*
 results/metrics/*
 results/figures/*
 !results/**/.gitkeep
-*.md
+ns-project-outline.md
 *.log
