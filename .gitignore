@@ -8,7 +8,6 @@ data/raw/*.meta.json
 data/processed/*
 !data/processed/.gitkeep
 results/metrics/*
-results/figures/*
 !results/**/.gitkeep
 ns-project-outline.md
 *.log
