@@ -109,10 +109,24 @@ def fig1_degree_distribution(nodes: pd.DataFrame, topology: dict, out_dir: Path,
 
 
 # =========================================================================== fig2
+def _with_scenario(df: pd.DataFrame) -> pd.DataFrame:
+    if "scenario" not in df:  # tables written before named scenarios existed
+        df = df.assign(scenario=[f"beta_m={b:g}" for b in df["beta_maintainer"]])
+    return df
+
+
+def _scenario_title(scenario: str) -> str:
+    named = {"dependency_only": "Dependency channel only", "beta_m=0": "Dependency channel only",
+             "SH1_calibrated": "Shai-Hulud 1 calibration", "SH2_calibrated": "Shai-Hulud 2 calibration"}
+    return named.get(scenario, scenario.replace("_", " ").replace("beta_m=", "+ credential channel β_m = "))
+
+
 def fig2_sir_curves(curves: pd.DataFrame, n_nodes: int, out_dir: Path, name: str,
-                    beta_maintainer: float = 0.0, t_max: int | None = None) -> list[Path]:
+                    scenario: str | None = None, t_max: int | None = None) -> list[Path]:
     """Mean S/I/R share over time with the 95% CI of the mean and the 2.5-97.5% run envelope."""
-    data = curves[np.isclose(curves["beta_maintainer"], beta_maintainer)]
+    curves = _with_scenario(curves)
+    scenario = scenario or curves["scenario"].iloc[0]
+    data = curves[curves["scenario"] == scenario]
     groups = [g for g in GROUP_ORDER if g in set(data["group"])]
     fig, axes = plt.subplots(1, len(groups), figsize=(2.3 * len(groups) + 0.6, 2.8), sharey=True, squeeze=False)
     if t_max is None:  # trim the flat tail: last tick where mean I is still >= 0.1% of N
@@ -135,8 +149,7 @@ def fig2_sir_curves(curves: pd.DataFrame, n_nodes: int, out_dir: Path, name: str
     handles, _ = axes[0][0].get_legend_handles_labels()
     fig.legend(handles, ["Susceptible", "Infected", "Recovered"], loc="lower center",
                ncol=3, bbox_to_anchor=(0.5, -0.15))
-    sub = "" if beta_maintainer == 0 else f", credential channel β_m = {beta_maintainer:g}"
-    fig.suptitle(f"SIR trajectories by origin (mean, 95% CI, 2.5–97.5% of runs{sub})",
+    fig.suptitle(f"SIR trajectories by origin: {_scenario_title(scenario)} (mean, 95% CI, 2.5–97.5% of runs)",
                  fontsize=10, fontweight="semibold", color=INK, y=1.03)
     return save(fig, name, out_dir)
 
@@ -159,18 +172,20 @@ def _violin_box(ax, values: list[np.ndarray], colors: list[str]) -> None:
 
 def fig3_superspreader_comparison(runs: pd.DataFrame, out_dir: Path, name: str) -> list[Path]:
     """Rows: R_inf and T80 (reached runs only); columns: credential-channel settings."""
-    bms = sorted(runs["beta_maintainer"].unique())
+    runs = _with_scenario(runs)
+    scenarios = list(dict.fromkeys(runs["scenario"]))
     groups = [g for g in GROUP_ORDER if g in set(runs["group"])]
     colors = [GROUP[g] for g in groups]
-    fig, axes = plt.subplots(2, len(bms), figsize=(2.9 * len(bms) + 0.4, 5.2), sharey="row", squeeze=False)
-    for j, bm in enumerate(bms):
-        d = runs[np.isclose(runs["beta_maintainer"], bm)]
+    fig, axes = plt.subplots(2, len(scenarios), figsize=(2.9 * len(scenarios) + 0.4, 5.2), sharey="row",
+                             squeeze=False)
+    for j, scenario in enumerate(scenarios):
+        d = runs[runs["scenario"] == scenario]
         r_inf = [d.loc[d["group"] == g, "r_inf"].to_numpy() for g in groups]
         t80 = [d.loc[d["group"] == g, "t80"].dropna().to_numpy() for g in groups]
         _violin_box(axes[0][j], r_inf, colors)
         _violin_box(axes[1][j], t80, colors)
         reached = [d.loc[d["group"] == g, "t80"].notna().mean() for g in groups]
-        axes[0][j].set_title("Dependency channel only" if bm == 0 else f"+ credential channel β_m = {bm:g}")
+        axes[0][j].set_title(_scenario_title(scenario))
         axes[0][j].set_xticks(range(1, len(groups) + 1), [g.capitalize() for g in groups])
         axes[1][j].set_xticks(range(1, len(groups) + 1),
                               [f"{g.capitalize()}\n{r:.0%}" for g, r in zip(groups, reached)])
@@ -276,9 +291,11 @@ def make_all_figures(tag: str, metrics_dir: Path = METRICS_DIR, figures_dir: Pat
     if m("rq1_curves.csv").exists():
         meta = json.loads(m("rq1_meta.json").read_text(encoding="utf-8"))
         written += fig2_sir_curves(pd.read_csv(m("rq1_curves.csv")), meta["n_nodes"], out_dir,
-                                   "fig2_sir_epidemic_curves", beta_maintainer)
+                                   "fig2_sir_epidemic_curves")
     if m("rq1_runs.csv").exists():
-        runs = pd.read_csv(m("rq1_runs.csv"), usecols=["beta_maintainer", "group", "r_inf", "t80"])
+        cols = pd.read_csv(m("rq1_runs.csv"), nrows=0).columns
+        use = [c for c in ("scenario", "beta_maintainer", "group", "r_inf", "t80") if c in cols]
+        runs = pd.read_csv(m("rq1_runs.csv"), usecols=use)
         written += fig3_superspreader_comparison(runs, out_dir, "fig3_superspreader_comparison")
     if m("rq2_summary.csv").exists():
         written += fig4_semver_phase_transition(pd.read_csv(m("rq2_summary.csv")),

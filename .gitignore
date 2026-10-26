@@ -11,3 +11,4 @@ results/metrics/*
 !results/**/.gitkeep
 ns-project-outline.md
 *.log
+data/raw/incidents/sources/

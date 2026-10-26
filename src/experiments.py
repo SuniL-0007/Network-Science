@@ -113,31 +113,38 @@ def _frame(jobs: list[MCJob], results: list[list]) -> tuple[pd.DataFrame, list[l
 
 
 # =========================================================================== RQ1
+def rq1_scenarios(cfg: ExperimentConfig) -> list[tuple[str, SIRParams]]:
+    """Named parameter sets for RQ1: `cfg.rq1_scenarios` if given, else rq1_params x beta_m."""
+    if cfg.rq1_scenarios:
+        return list(cfg.rq1_scenarios)
+    return [(f"beta_m={bm:g}", replace(cfg.rq1_params, beta_maintainer=bm)) for bm in cfg.rq1_beta_maintainer]
+
+
 def run_rq1(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig()) -> dict[str, pd.DataFrame]:
     """Super-spreader effect: `n_runs` outbreaks per origin node in each origin group."""
     jobs = []
-    for bm in cfg.rq1_beta_maintainer:
-        params = replace(cfg.rq1_params, beta_maintainer=bm)
+    for scenario, params in rq1_scenarios(cfg):
         for group in ORIGIN_GROUPS:
             for origin in ctx.groups[group]:
                 jobs.append(MCJob(params, [origin], cfg.n_runs, seed_for(cfg, "rq1", origin),
-                                  tag={"beta_maintainer": bm, "group": group.removeprefix("origin_"),
-                                       "origin": origin}))
+                                  tag={"scenario": scenario, "beta_maintainer": params.beta_maintainer,
+                                       "group": group.removeprefix("origin_"), "origin": origin}))
     log.info("RQ1: %d configurations x %d runs", len(jobs), cfg.n_runs)
-    results = run_batch(ctx.model, jobs, _reducer(ctx, cfg, curves=True), cfg.n_jobs)
+    results = run_batch(status_quo_model(ctx, cfg), jobs, _reducer(ctx, cfg, curves=True), cfg.n_jobs)
     runs, curves = _frame(jobs, results)
 
-    by = ["beta_maintainer", "group"]
+    by = ["scenario", "beta_maintainer", "group"]
     summary = summarize_runs(runs, by, major_frac=cfg.major_outbreak_frac, n_boot=cfg.n_boot)
     per_origin = summarize_runs(runs, by + ["origin"], metrics=("r_inf", "t80"),
                                 major_frac=cfg.major_outbreak_frac, n_boot=cfg.n_boot)
     curve_frames = []
-    length = cfg.rq1_params.t_max + 1
+    length = max(p.t_max for _, p in rq1_scenarios(cfg)) + 1
     flat = [c for job_curves in curves for c in job_curves]  # aligned with runs' row index
-    for (bm, group), idx in runs.groupby(by, sort=False).groups.items():
+    for (scenario, bm, group), idx in runs.groupby(by, sort=False).groups.items():
         sub = curve_summary([flat[i] for i in idx], length)
         sub.insert(0, "group", group)
         sub.insert(0, "beta_maintainer", bm)
+        sub.insert(0, "scenario", scenario)
         curve_frames.append(sub)
     return {"runs": runs, "summary": summary, "per_origin": per_origin,
             "curves": pd.concat(curve_frames, ignore_index=True)}
@@ -148,28 +155,33 @@ def run_rq1(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig()) 
 class Regime:
     name: str
     pin_fraction: float | None = None  # convert loose edges to exact until this share is pinned
-    hook_reduction: float = 0.0  # cut of the hook boost (w_hook - 1)
+    hook_reduction: float = 0.0  # static hook mode: cut of the hook boost (w_hook - 1)
+    scripts_blocked_frac: float = 0.0  # injected hook mode: share of packages blocking scripts
     provenance_top: float = 0.0  # extra provenance on the top fraction of hubs
     provenance_factor: float = 1.0
 
 
 def default_regimes(cfg: ExperimentConfig) -> list[Regime]:
+    base, off = cfg.baseline_scripts_blocked, cfg.scripts_disabled_frac
     return [
-        Regime("status_quo"),
-        Regime("strict_lockfile", pin_fraction=cfg.pin_fraction),
-        Regime("scripts_disabled", hook_reduction=cfg.hook_reduction),
+        Regime("status_quo", scripts_blocked_frac=base),
+        Regime("strict_lockfile", pin_fraction=cfg.pin_fraction, scripts_blocked_frac=base),
+        Regime("scripts_disabled", hook_reduction=cfg.hook_reduction, scripts_blocked_frac=off),
         Regime("hardened", pin_fraction=cfg.pin_fraction, hook_reduction=cfg.hook_reduction,
-               provenance_top=cfg.provenance_top, provenance_factor=cfg.provenance_factor),
+               scripts_blocked_frac=off, provenance_top=cfg.provenance_top,
+               provenance_factor=cfg.provenance_factor),
     ]
 
 
 def apply_regime(model: ContagionModel, regime: Regime, base: SIRParams,
-                 seed: int = 0) -> tuple[ContagionModel, dict]:
+                 seed: int = 0, node_seed: int = 0) -> tuple[ContagionModel, dict]:
     """Model with the regime's edge/node overrides, plus SIRParams overrides.
 
     Status quo keeps the observed SemVer mix. Pinning converts each loose (non-exact) edge
     to exact with the probability that brings the exact share to `pin_fraction`, so already
-    pinned edges stay pinned. The conversion is one fixed draw per regime.
+    pinned edges stay pinned. The conversion is one fixed draw per regime. Script-blocking
+    packages are the nodes whose fixed uniform draw (from `node_seed`) falls below the
+    regime's share, so a 10% blocking set is nested inside a 70% one.
     """
     rng = np.random.default_rng(seed)
     w = model.w_semver.copy()
@@ -187,11 +199,20 @@ def apply_regime(model: ContagionModel, regime: Regime, base: SIRParams,
         k = max(1, math.ceil(regime.provenance_top * model.n))
         prov[np.argsort(-model.out_degree, kind="stable")[:k]] = True
 
+    blocked = np.random.default_rng(node_seed).random(model.n) < regime.scripts_blocked_frac
+
     params = {
         "hook_multiplier": 1.0 + (base.hook_multiplier - 1.0) * (1.0 - regime.hook_reduction),
         "provenance_factor": regime.provenance_factor,
     }
-    return model.with_overrides(w_semver=w, provenance=prov), params
+    return model.with_overrides(w_semver=w, provenance=prov, scripts_blocked=blocked), params
+
+
+def status_quo_model(ctx: ExperimentContext, cfg: ExperimentConfig) -> ContagionModel:
+    """The base model with the status-quo share of script-blocking packages (RQ1, RQ3)."""
+    regime = Regime("status_quo", scripts_blocked_frac=cfg.baseline_scripts_blocked)
+    model, _ = apply_regime(ctx.model, regime, cfg.rq1_params, node_seed=seed_for(cfg, "scripts"))
+    return model
 
 
 def run_rq2(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig(),
@@ -201,11 +222,13 @@ def run_rq2(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig(),
     base = cfg.rq1_params
     models, overrides, regime_rows = {}, {}, []
     for r in regimes:
-        models[r.name], overrides[r.name] = apply_regime(ctx.model, r, base, seed_for(cfg, "regime", r.name))
+        models[r.name], overrides[r.name] = apply_regime(ctx.model, r, base, seed_for(cfg, "regime", r.name),
+                                                         node_seed=seed_for(cfg, "scripts"))
         m = models[r.name]
-        regime_rows.append({**asdict(r), **overrides[r.name],
+        regime_rows.append({**asdict(r), **overrides[r.name], "hook_mode": base.hook_mode,
                             "exact_share": float(np.isclose(m.w_semver, SEMVER_BETA_MODIFIER["exact"]).mean()),
-                            "provenance_share": float(m.provenance.mean())})
+                            "provenance_share": float(m.provenance.mean()),
+                            "scripts_blocked_share": float(m.scripts_blocked.mean())})
 
     origin = ctx.draw_from("origin_hub")
     jobs = []
@@ -255,19 +278,20 @@ def run_rq3(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig()) 
     K nodes at t=0, with K = mean total nodes treated by hub patching at the same B and
     response delay (the delay only changes K for proactive strategies).
     """
-    model, params = ctx.model, cfg.rq3_params
+    model, params = status_quo_model(ctx, cfg), cfg.rq3_params
     origin = ctx.draw_from("origin_hub")
     seed = seed_for(cfg, "rq3")  # shared by every strategy -> paired runs
     budgets = sorted({max(1, round(f * model.n)) for f in cfg.rq3_budget_fracs})
     reducer = _reducer(ctx, cfg)
 
     def job(strategy, b, d, k=0, policy=None, immunized=()):
-        return MCJob(params, origin, cfg.n_runs, seed, immunized, policy,
+        p = replace(params, recovery_start=d) if cfg.rq3_couple_recovery else params
+        return MCJob(p, origin, cfg.n_runs, seed, immunized, policy,
                      tag={"strategy": strategy, "delay": d, "budget": b, "budget_frac": b / model.n,
                           "k_immunized": k})
 
     delays = cfg.rq3_response_delays
-    phase1 = [job("none", 0, d) for d in delays]  # identical per delay (paired seed); kept for joins
+    phase1 = [job("none", 0, d) for d in delays]  # natural patching also waits for detection
     for d in delays:
         for b in budgets:
             phase1.append(job("random_patch", b, d, policy=make_policy(model, "random", b, start_tick=d)))
@@ -293,11 +317,12 @@ def run_rq3(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig()) 
     summary = summarize_runs(runs, ["strategy", "delay", "budget", "budget_frac", "k_immunized"],
                              metrics=("r_inf", "t80", "i_max_frac", "n_patched"),
                              major_frac=cfg.major_outbreak_frac, n_boot=cfg.n_boot)
-    base = runs.loc[(runs["strategy"] == "none") & (runs["delay"] == delays[0])].sort_values("run")["r_inf"].to_numpy()
+    base = {d: g.sort_values("run")["r_inf"].to_numpy()
+            for d, g in runs[runs["strategy"] == "none"].groupby("delay")}
     red_rows = []
     treated = runs[runs["strategy"] != "none"]
     for (strategy, d, b), grp in treated.groupby(["strategy", "delay", "budget"], sort=False):
-        red = paired_reduction(base, grp.sort_values("run")["r_inf"].to_numpy(), cfg.n_boot)
+        red = paired_reduction(base[d], grp.sort_values("run")["r_inf"].to_numpy(), cfg.n_boot)
         red_rows.append({"strategy": strategy, "delay": d, "budget": b, "budget_frac": b / model.n,
                          "k_immunized": int(grp["k_immunized"].iloc[0]),
                          "delta_r_inf": red["reduction"], "delta_r_inf_ci_lo": red["ci_lo"],

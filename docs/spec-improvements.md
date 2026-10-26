@@ -95,6 +95,67 @@ already reflected in the Milestone 1 code; the rest are planned for later milest
     without peer edges. Report τ_c theory next to the empirical threshold, but don't read it
     as an ecosystem-wide threshold. **[M4]**
 
+## C2. Pre-paper fixes (2026-10-26)
+
+17e. **Worm-injected install scripts** (`hook_mode="injected"`). The spec's static boost
+    (×1.25 on the ~1% of packages that declare hooks) makes "scripts disabled" a no-op,
+    which contradicts Shai-Hulud: the worm injects its own preinstall/postinstall script
+    into every package it republishes. Now every infected package carries the hook, and
+    protection is consumer-side. A package whose maintainers/CI block lifecycle scripts is
+    infected with probability `blocked_susceptibility` (0.1) × β_vu. Status quo: 10% of
+    packages block scripts (pnpm ≥ 10, Bun, `--ignore-scripts`). Scripts-disabled and
+    hardened regimes: 70%. Blocking sets are nested across regimes, so comparisons are
+    paired. The static formula is kept as a baseline variant. **[pre-paper]**
+17f. **Per-token publish cap.** Shai-Hulud republished at most 20 packages per stolen
+    token (wave 1) and 100 (wave 2). `maintainer_publish_cap` (default 20 in experiments)
+    replaces "all of the maintainer's packages", which is an upper bound. **[pre-paper]**
+17g. **Spam-ring cleaning.** The full high-impact closure (14,660 packages) contained a
+    25-package *complete* mutual-dependency clique owned by one maintainer (36 fruit-named
+    reward-farming packages, entered via `web3-gas`). On its own it set λ_max(W)=24.
+    `spam_ring_nodes` drops SCCs with ≥10 packages and density ≥0.5, plus their owners'
+    other packages. Legitimate monorepo cycles (`@stdlib` density 0.26, `@eggjs` 0.10,
+    `@yarnpkg` 0.13) stay. A 17-package low-density cluster of oddly named packages
+    remains and is noted as a limitation. **[pre-paper]**
+17h. **β grid extended down to 0.001** (13 values), so thresholds are no longer censored
+    at the grid floor. **[pre-paper]**
+17i. **Sample-size design.** The crawl closure of the 4,686 high-impact seeds is complete
+    at 14,660 packages (14,624 after cleaning). Robustness therefore uses 5k / 10k / full
+    closure. **[pre-paper]**
+17j. **Literature caveats to carry into the paper:**
+    - In directed networks 1/λ_max is only a lower bound on the threshold (Li 2013).
+    - Optimised strategies beat betweenness immunization (Schneider et al. 2011), so we
+      claim "better than hub/random at matched budget", not optimality.
+    - Pinning delays security fixes (Pinckney 2023).
+    - Compromised CI got around trusted publishing (s1ngularity; Mini Shai-Hulud).
+
+17k. **Empirical validation against Shai-Hulud** (`src/validation.py`, registry metadata
+    only; result in `results/metrics/validation_incidents.csv`).
+    - Real victims cluster by maintainer, not by dependency links:
+      - SH1: 98% of 189 compromised packages share a maintainer with another victim
+        (null 49%); 32% are linked by an installed dependency (null 5%).
+      - SH2: 95% vs null 69% (co-maintained); 23% vs null 15% (dependency-linked).
+    - Victims are almost absent from the high-impact core: 2 SH1 and 0–7 SH2 packages
+      appear in our graphs, and those sit around the 30th–50th percentile of out-degree and
+      blast radius.
+    - Paper framing: real waves spread through stolen tokens in the low-impact periphery.
+      Our experiments quantify what happens if such a worm reaches the core.
+    - The null is drawn from the high-impact closure, where monorepo organizations inflate
+      co-maintenance, so the contrast is conservative. **[pre-paper]**
+17l. **Calibration** (`src/calibration.py`, tick = 1 hour). (β, β_m, γ) are fitted per wave
+    to the observed plateau time (SH1 37 h after a 24 h detection lag, cap 20; SH2 13.4 h,
+    immediate detection, cap 100) and to a ~75% stolen-token share of infections.
+    Patching starts only at detection (`recovery_start`). **[pre-paper]**
+    - Frozen values (extended grid; both best fits lie inside it):
+      - SH1: β=0.02, β_m=0.02, γ=0.1 gives T90 41.5 h and a 76% token share.
+      - SH2: β=0.2, β_m=0.1, γ=0.05 gives T90 14.0 h and a 77% token share.
+    - Identifiability:
+      - β and β_m are constrained; the within-tolerance ranges are SH1 β ∈ [0.01, 0.05],
+        β_m ∈ [0.005, 0.1] and SH2 β ∈ [0.1, 0.3], β_m ∈ [0.02, 0.2].
+      - γ is not identified (all values tried fit).
+      - Absolute outbreak size in the core is not identified (556–8,600 within tolerance),
+        so core sizes are reported as projections.
+    - Scenarios used in the paper: `src/paper_suite.py`.
+
 ## D. Engineering
 
 18. **NDlib is optional.** It installs on Python 3.14, but it is lightly maintained and

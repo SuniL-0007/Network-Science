@@ -1,0 +1,697 @@
+% references.bib -- verified references for
+% "Super-spreaders, Firebreaks and Stolen Tokens: SIR Modelling of
+%  Self-Propagating Worms in the npm Dependency Network"
+% Every entry was checked on 2026-10-26 (DOI resolution via doi.org / Crossref,
+% or by fetching the publisher, arXiv or vendor page). See docs/literature.md.
+
+% ---------------------------------------------------------------------------
+% 1. Package dependency networks
+% ---------------------------------------------------------------------------
+
+@inproceedings{kikas2017structure,
+  author    = {Kikas, Riivo and Gousios, Georgios and Dumas, Marlon and Pfahl, Dietmar},
+  title     = {Structure and Evolution of Package Dependency Networks},
+  booktitle = {Proceedings of the 14th IEEE/ACM International Conference on Mining Software Repositories (MSR)},
+  publisher = {IEEE},
+  year      = {2017},
+  pages     = {102--112},
+  doi       = {10.1109/MSR.2017.55}
+}
+
+@article{decan2019empirical,
+  author    = {Decan, Alexandre and Mens, Tom and Grosjean, Philippe},
+  title     = {An Empirical Comparison of Dependency Network Evolution in Seven Software Packaging Ecosystems},
+  journal   = {Empirical Software Engineering},
+  volume    = {24},
+  number    = {1},
+  pages     = {381--416},
+  year      = {2019},
+  publisher = {Springer},
+  doi       = {10.1007/s10664-017-9589-y}
+}
+
+@inproceedings{abdalkareem2017trivial,
+  author    = {Abdalkareem, Rabe and Nourry, Olivier and Wehaibi, Sultan and Mujahid, Suhaib and Shihab, Emad},
+  title     = {Why Do Developers Use Trivial Packages? An Empirical Case Study on npm},
+  booktitle = {Proceedings of the 11th Joint Meeting on Foundations of Software Engineering (ESEC/FSE)},
+  publisher = {ACM},
+  year      = {2017},
+  pages     = {385--395},
+  doi       = {10.1145/3106237.3106267}
+}
+
+@misc{npm2016leftpad,
+  author       = {{npm, Inc.}},
+  title        = {kik, left-pad, and npm},
+  howpublished = {The npm Blog},
+  year         = {2016},
+  month        = mar,
+  note         = {Published 23 March 2016},
+  url          = {https://blog.npmjs.org/post/141577284765/kik-left-pad-and-npm},
+  urldate      = {2026-10-26}
+}
+
+% ---------------------------------------------------------------------------
+% 2. npm security and supply-chain attacks
+% ---------------------------------------------------------------------------
+
+@inproceedings{zimmermann2019smallworld,
+  author    = {Zimmermann, Markus and Staicu, Cristian-Alexandru and Tenny, Cam and Pradel, Michael},
+  title     = {Small World with High Risks: A Study of Security Threats in the npm Ecosystem},
+  booktitle = {Proceedings of the 28th USENIX Security Symposium},
+  publisher = {USENIX Association},
+  year      = {2019},
+  pages     = {995--1010},
+  url       = {https://www.usenix.org/conference/usenixsecurity19/presentation/zimmerman}
+}
+
+@inproceedings{ohm2020backstabber,
+  author    = {Ohm, Marc and Plate, Henrik and Sykosch, Arnold and Meier, Michael},
+  title     = {Backstabber's Knife Collection: A Review of Open Source Software Supply Chain Attacks},
+  booktitle = {Detection of Intrusions and Malware, and Vulnerability Assessment (DIMVA)},
+  series    = {Lecture Notes in Computer Science},
+  publisher = {Springer},
+  year      = {2020},
+  pages     = {23--43},
+  doi       = {10.1007/978-3-030-52683-2_2}
+}
+
+@inproceedings{taylor2020typosquatting,
+  author    = {Taylor, Matthew and Vaidya, Ruturaj and Davidson, Drew and De Carli, Lorenzo and Rastogi, Vaibhav},
+  title     = {Defending Against Package Typosquatting},
+  booktitle = {Network and System Security (NSS)},
+  series    = {Lecture Notes in Computer Science},
+  publisher = {Springer},
+  year      = {2020},
+  pages     = {112--131},
+  doi       = {10.1007/978-3-030-65745-1_7}
+}
+
+@inproceedings{ladisa2023sok,
+  author    = {Ladisa, Piergiorgio and Plate, Henrik and Martinez, Matias and Barais, Olivier},
+  title     = {{SoK}: Taxonomy of Attacks on Open-Source Software Supply Chains},
+  booktitle = {2023 IEEE Symposium on Security and Privacy (SP)},
+  publisher = {IEEE},
+  year      = {2023},
+  pages     = {1509--1526},
+  doi       = {10.1109/SP46215.2023.10179304}
+}
+
+@inproceedings{zahan2022weaklinks,
+  author    = {Zahan, Nusrat and Zimmermann, Thomas and Godefroid, Patrice and Murphy, Brendan and Maddila, Chandra and Williams, Laurie},
+  title     = {What Are Weak Links in the npm Supply Chain?},
+  booktitle = {Proceedings of the 44th International Conference on Software Engineering: Software Engineering in Practice (ICSE-SEIP)},
+  publisher = {ACM},
+  year      = {2022},
+  pages     = {331--340},
+  doi       = {10.1145/3510457.3513044}
+}
+
+@inproceedings{wyss2022latch,
+  author    = {Wyss, Elizabeth and Wittman, Alexander and Davidson, Drew and De Carli, Lorenzo},
+  title     = {Wolf at the Door: Preventing Install-Time Attacks in npm with Latch},
+  booktitle = {Proceedings of the 2022 ACM Asia Conference on Computer and Communications Security (ASIA CCS)},
+  publisher = {ACM},
+  year      = {2022},
+  pages     = {1139--1153},
+  doi       = {10.1145/3488932.3523262}
+}
+
+@misc{npm2018eventstream,
+  author       = {{npm, Inc.}},
+  title        = {Details about the event-stream incident},
+  howpublished = {The npm Blog},
+  year         = {2018},
+  month        = nov,
+  note         = {Published 27 November 2018},
+  url          = {https://blog.npmjs.org/post/180565383195/details-about-the-event-stream-incident},
+  urldate      = {2026-10-26}
+}
+
+@misc{github2021uaparser,
+  author       = {{GitHub Advisory Database}},
+  title        = {Embedded malware in ua-parser-js ({GHSA-pjwm-rvh2-c87w}, {CVE-2021-4229})},
+  year         = {2021},
+  month        = oct,
+  note         = {Published 22 October 2021},
+  url          = {https://github.com/advisories/GHSA-pjwm-rvh2-c87w},
+  urldate      = {2026-10-26}
+}
+
+@misc{aikido2025chalkdebug,
+  author       = {Eriksen, Charlie},
+  title        = {npm debug and chalk packages compromised},
+  howpublished = {Aikido Security Blog},
+  year         = {2025},
+  month        = sep,
+  note         = {Published 8 September 2025},
+  url          = {https://www.aikido.dev/blog/npm-debug-and-chalk-packages-compromised},
+  urldate      = {2026-10-26}
+}
+
+@misc{wiz2025singularity,
+  author       = {Bar, Merav and McCarthy, Rami},
+  title        = {s1ngularity: supply chain attack leaks secrets on {GitHub}: everything you need to know},
+  howpublished = {Wiz Blog},
+  year         = {2025},
+  month        = aug,
+  note         = {Published 27 August 2025, updated 29 August 2025},
+  url          = {https://www.wiz.io/blog/s1ngularity-supply-chain-attack},
+  urldate      = {2026-10-26}
+}
+
+@misc{stepsecurity2025shaihulud,
+  author       = {Kurmi, Ashish},
+  title        = {Shai-Hulud: Self-Replicating Worm Compromises 500+ {NPM} Packages},
+  howpublished = {StepSecurity Blog},
+  year         = {2025},
+  month        = sep,
+  note         = {Published 15 September 2025},
+  url          = {https://www.stepsecurity.io/blog/ctrl-tinycolor-and-40-npm-packages-compromised},
+  urldate      = {2026-10-26}
+}
+
+@misc{socket2025shaihulud,
+  author       = {Pandya, Kush and van der Zee, Peter and Brown, Olivia and {Socket Research Team}},
+  title        = {Updated and Ongoing Supply Chain Attack Targets {CrowdStrike} npm Packages},
+  howpublished = {Socket Blog},
+  year         = {2025},
+  month        = sep,
+  note         = {Published 16 September 2025},
+  url          = {https://socket.dev/blog/ongoing-supply-chain-attack-targets-crowdstrike-npm-packages},
+  urldate      = {2026-10-26}
+}
+
+@misc{cisa2025npm,
+  author       = {{Cybersecurity and Infrastructure Security Agency}},
+  title        = {Widespread Supply Chain Compromise Impacting npm Ecosystem},
+  howpublished = {CISA Alert},
+  year         = {2025},
+  month        = sep,
+  note         = {Released 23 September 2025},
+  url          = {https://www.cisa.gov/news-events/alerts/2025/09/23/widespread-supply-chain-compromise-impacting-npm-ecosystem},
+  urldate      = {2026-10-26}
+}
+
+@misc{unit42025shaihulud,
+  author       = {{Unit 42, Palo Alto Networks}},
+  title        = {``Shai-Hulud'' Worm Compromises npm Ecosystem in Supply Chain Attack},
+  howpublished = {Unit 42 Threat Research},
+  year         = {2025},
+  note         = {First published September 2025; updated 25--26 November 2025 and 3 December 2025},
+  url          = {https://unit42.paloaltonetworks.com/npm-supply-chain-attack/},
+  urldate      = {2026-10-26}
+}
+
+@misc{wiz2025shaihulud2,
+  author       = {Ramati, Hila and Bar, Merav and Benmocha, Gal and Tikochinski, Gili},
+  title        = {Shai-Hulud 2.0 Supply Chain Attack: 25K+ Repos Exposing Secrets},
+  howpublished = {Wiz Blog},
+  year         = {2025},
+  month        = nov,
+  note         = {Published 24 November 2025},
+  url          = {https://www.wiz.io/blog/shai-hulud-2-0-ongoing-supply-chain-attack},
+  urldate      = {2026-10-26}
+}
+
+@misc{datadog2025shaihulud2,
+  author       = {Tafani-Dereeper, Christophe and Obregoso, Sebastian},
+  title        = {The Shai-Hulud 2.0 npm worm: analysis, and what you need to know},
+  howpublished = {Datadog Security Labs},
+  year         = {2025},
+  month        = nov,
+  note         = {Published 25 November 2025, updated 4 December 2025},
+  url          = {https://securitylabs.datadoghq.com/articles/shai-hulud-2.0-npm-worm/},
+  urldate      = {2026-10-26}
+}
+
+@misc{unit422026npmlandscape,
+  author       = {{Unit 42, Palo Alto Networks}},
+  title        = {The npm Threat Landscape: Attack Surface and Mitigations},
+  howpublished = {Unit 42 Threat Research},
+  year         = {2026},
+  note         = {Updated 15 July 2026},
+  url          = {https://unit42.paloaltonetworks.com/monitoring-npm-supply-chain-attacks/},
+  urldate      = {2026-10-26}
+}
+
+% ---------------------------------------------------------------------------
+% 3. Defences
+% ---------------------------------------------------------------------------
+
+@misc{prestonwerner2013semver,
+  author       = {Preston-Werner, Tom},
+  title        = {Semantic Versioning 2.0.0},
+  year         = {2013},
+  url          = {https://semver.org/spec/v2.0.0.html},
+  urldate      = {2026-10-26}
+}
+
+@article{decan2021semver,
+  author    = {Decan, Alexandre and Mens, Tom},
+  title     = {What Do Package Dependencies Tell Us About Semantic Versioning?},
+  journal   = {IEEE Transactions on Software Engineering},
+  volume    = {47},
+  number    = {6},
+  pages     = {1226--1240},
+  year      = {2021},
+  doi       = {10.1109/TSE.2019.2918315}
+}
+
+@inproceedings{pinckney2023semver,
+  author    = {Pinckney, Donald and Cassano, Federico and Guha, Arjun and Bell, Jonathan},
+  title     = {A Large Scale Analysis of Semantic Versioning in {NPM}},
+  booktitle = {Proceedings of the 20th IEEE/ACM International Conference on Mining Software Repositories (MSR)},
+  publisher = {IEEE},
+  year      = {2023},
+  pages     = {485--497},
+  doi       = {10.1109/MSR59073.2023.00073}
+}
+
+@misc{github2023provenance,
+  author       = {DeHamer, Brian and Harrison, Philip},
+  title        = {Introducing npm package provenance},
+  howpublished = {The GitHub Blog},
+  year         = {2023},
+  month        = apr,
+  note         = {Published 19 April 2023},
+  url          = {https://github.blog/security/supply-chain-security/introducing-npm-package-provenance/},
+  urldate      = {2026-10-26}
+}
+
+@inproceedings{newman2022sigstore,
+  author    = {Newman, Zachary and Meyers, John Speed and Torres-Arias, Santiago},
+  title     = {Sigstore: Software Signing for Everybody},
+  booktitle = {Proceedings of the 2022 ACM SIGSAC Conference on Computer and Communications Security (CCS)},
+  publisher = {ACM},
+  year      = {2022},
+  pages     = {2353--2367},
+  doi       = {10.1145/3548606.3560596}
+}
+
+@misc{github2025trustedpublishing,
+  author       = {{GitHub}},
+  title        = {npm trusted publishing with {OIDC} is generally available},
+  howpublished = {GitHub Changelog},
+  year         = {2025},
+  month        = jul,
+  note         = {Published 31 July 2025},
+  url          = {https://github.blog/changelog/2025-07-31-npm-trusted-publishing-with-oidc-is-generally-available/},
+  urldate      = {2026-10-26}
+}
+
+@misc{slsa2023spec,
+  author       = {{SLSA Community}},
+  title        = {{SLSA} Specification, Version 1.0},
+  howpublished = {Open Source Security Foundation / Linux Foundation},
+  year         = {2023},
+  url          = {https://slsa.dev/spec/v1.0/},
+  urldate      = {2026-10-26}
+}
+
+@misc{npmdocs2026ignorescripts,
+  author       = {{npm, Inc.}},
+  title        = {npm config: ignore-scripts},
+  howpublished = {npm Docs (CLI v11)},
+  url          = {https://docs.npmjs.com/cli/v11/using-npm/config#ignore-scripts},
+  urldate      = {2026-10-26}
+}
+
+@misc{pnpm2025v10,
+  author       = {{pnpm contributors}},
+  title        = {pnpm v10.0.0 Release Notes},
+  howpublished = {GitHub release},
+  year         = {2025},
+  month        = jan,
+  note         = {Released 7 January 2025},
+  url          = {https://github.com/pnpm/pnpm/releases/tag/v10.0.0},
+  urldate      = {2026-10-26}
+}
+
+@misc{lavamoat2026allowscripts,
+  author       = {{LavaMoat contributors}},
+  title        = {@lavamoat/allow-scripts},
+  howpublished = {GitHub repository},
+  url          = {https://github.com/LavaMoat/LavaMoat/tree/main/packages/allow-scripts},
+  urldate      = {2026-10-26}
+}
+
+@misc{github2025npmplan,
+  author       = {Ren{\'e}-Corail, Xavier},
+  title        = {Our plan for a more secure npm supply chain},
+  howpublished = {The GitHub Blog},
+  year         = {2025},
+  month        = sep,
+  note         = {Published 22 September 2025},
+  url          = {https://github.blog/security/supply-chain-security/our-plan-for-a-more-secure-npm-supply-chain/},
+  urldate      = {2026-10-26}
+}
+
+@misc{github2025classictokens,
+  author       = {{GitHub}},
+  title        = {npm classic tokens revoked, session-based auth and {CLI} token management now available},
+  howpublished = {GitHub Changelog},
+  year         = {2025},
+  month        = dec,
+  note         = {Published 9 December 2025},
+  url          = {https://github.blog/changelog/2025-12-09-npm-classic-tokens-revoked-session-based-auth-and-cli-token-management-now-available/},
+  urldate      = {2026-10-26}
+}
+
+% ---------------------------------------------------------------------------
+% 4. Network epidemiology
+% ---------------------------------------------------------------------------
+
+@article{kermack1927contribution,
+  author    = {Kermack, William Ogilvy and McKendrick, A. G.},
+  title     = {A Contribution to the Mathematical Theory of Epidemics},
+  journal   = {Proceedings of the Royal Society of London. Series A},
+  volume    = {115},
+  number    = {772},
+  pages     = {700--721},
+  year      = {1927},
+  doi       = {10.1098/rspa.1927.0118}
+}
+
+@article{pastorsatorras2001epidemic,
+  author    = {Pastor-Satorras, Romualdo and Vespignani, Alessandro},
+  title     = {Epidemic Spreading in Scale-Free Networks},
+  journal   = {Physical Review Letters},
+  volume    = {86},
+  number    = {14},
+  pages     = {3200--3203},
+  year      = {2001},
+  doi       = {10.1103/PhysRevLett.86.3200}
+}
+
+@article{pastorsatorras2015review,
+  author    = {Pastor-Satorras, Romualdo and Castellano, Claudio and Van Mieghem, Piet and Vespignani, Alessandro},
+  title     = {Epidemic Processes in Complex Networks},
+  journal   = {Reviews of Modern Physics},
+  volume    = {87},
+  number    = {3},
+  pages     = {925--979},
+  year      = {2015},
+  doi       = {10.1103/RevModPhys.87.925}
+}
+
+@article{newman2002spread,
+  author    = {Newman, M. E. J.},
+  title     = {Spread of Epidemic Disease on Networks},
+  journal   = {Physical Review E},
+  volume    = {66},
+  number    = {1},
+  pages     = {016128},
+  year      = {2002},
+  doi       = {10.1103/PhysRevE.66.016128}
+}
+
+@inproceedings{wang2003eigenvalue,
+  author    = {Wang, Yang and Chakrabarti, Deepayan and Wang, Chenxi and Faloutsos, Christos},
+  title     = {Epidemic Spreading in Real Networks: An Eigenvalue Viewpoint},
+  booktitle = {Proceedings of the 22nd International Symposium on Reliable Distributed Systems (SRDS)},
+  publisher = {IEEE},
+  year      = {2003},
+  pages     = {25--34},
+  doi       = {10.1109/RELDIS.2003.1238052}
+}
+
+@article{chakrabarti2008thresholds,
+  author    = {Chakrabarti, Deepayan and Wang, Yang and Wang, Chenxi and Leskovec, Jurij and Faloutsos, Christos},
+  title     = {Epidemic Thresholds in Real Networks},
+  journal   = {ACM Transactions on Information and System Security},
+  volume    = {10},
+  number    = {4},
+  pages     = {1--26},
+  year      = {2008},
+  doi       = {10.1145/1284680.1284681}
+}
+
+@article{li2013directed,
+  author    = {Li, Cong and Wang, Huijuan and Van Mieghem, Piet},
+  title     = {Epidemic Threshold in Directed Networks},
+  journal   = {Physical Review E},
+  volume    = {88},
+  number    = {6},
+  pages     = {062802},
+  year      = {2013},
+  doi       = {10.1103/PhysRevE.88.062802}
+}
+
+@article{boguna2005directed,
+  author    = {Bogu{\~n}{\'a}, Mari{\'a}n and Serrano, M. {\'A}ngeles},
+  title     = {Generalized Percolation in Random Directed Networks},
+  journal   = {Physical Review E},
+  volume    = {72},
+  number    = {1},
+  pages     = {016106},
+  year      = {2005},
+  doi       = {10.1103/PhysRevE.72.016106}
+}
+
+@inproceedings{kephart1991directed,
+  author    = {Kephart, Jeffrey O. and White, Steve R.},
+  title     = {Directed-Graph Epidemiological Models of Computer Viruses},
+  booktitle = {Proceedings of the 1991 IEEE Computer Society Symposium on Research in Security and Privacy},
+  publisher = {IEEE},
+  year      = {1991},
+  pages     = {343--359},
+  doi       = {10.1109/RISP.1991.130801}
+}
+
+@inproceedings{zou2002codered,
+  author    = {Zou, Cliff Changchun and Gong, Weibo and Towsley, Don},
+  title     = {Code Red Worm Propagation Modeling and Analysis},
+  booktitle = {Proceedings of the 9th ACM Conference on Computer and Communications Security (CCS)},
+  publisher = {ACM},
+  year      = {2002},
+  pages     = {138--147},
+  doi       = {10.1145/586110.586130}
+}
+
+% ---------------------------------------------------------------------------
+% 5. Immunization
+% ---------------------------------------------------------------------------
+
+@article{pastorsatorras2002immunization,
+  author    = {Pastor-Satorras, Romualdo and Vespignani, Alessandro},
+  title     = {Immunization of Complex Networks},
+  journal   = {Physical Review E},
+  volume    = {65},
+  number    = {3},
+  pages     = {036104},
+  year      = {2002},
+  doi       = {10.1103/PhysRevE.65.036104}
+}
+
+@article{cohen2003acquaintance,
+  author    = {Cohen, Reuven and Havlin, Shlomo and ben-Avraham, Daniel},
+  title     = {Efficient Immunization Strategies for Computer Networks and Populations},
+  journal   = {Physical Review Letters},
+  volume    = {91},
+  number    = {24},
+  pages     = {247901},
+  year      = {2003},
+  doi       = {10.1103/PhysRevLett.91.247901}
+}
+
+@article{holme2002attack,
+  author    = {Holme, Petter and Kim, Beom Jun and Yoon, Chang No and Han, Seung Kee},
+  title     = {Attack Vulnerability of Complex Networks},
+  journal   = {Physical Review E},
+  volume    = {65},
+  number    = {5},
+  pages     = {056109},
+  year      = {2002},
+  doi       = {10.1103/PhysRevE.65.056109}
+}
+
+@article{schneider2011limited,
+  author    = {Schneider, Christian M. and Mihaljev, Tamara and Havlin, Shlomo and Herrmann, Hans J.},
+  title     = {Suppressing Epidemics with a Limited Amount of Immunization Units},
+  journal   = {Physical Review E},
+  volume    = {84},
+  number    = {6},
+  pages     = {061911},
+  year      = {2011},
+  doi       = {10.1103/PhysRevE.84.061911}
+}
+
+@article{chen2008immunization,
+  author    = {Chen, Yiping and Paul, Gerald and Havlin, Shlomo and Liljeros, Fredrik and Stanley, H. Eugene},
+  title     = {Finding a Better Immunization Strategy},
+  journal   = {Physical Review Letters},
+  volume    = {101},
+  number    = {5},
+  pages     = {058701},
+  year      = {2008},
+  doi       = {10.1103/PhysRevLett.101.058701}
+}
+
+@article{freeman1977betweenness,
+  author    = {Freeman, Linton C.},
+  title     = {A Set of Measures of Centrality Based on Betweenness},
+  journal   = {Sociometry},
+  volume    = {40},
+  number    = {1},
+  pages     = {35--41},
+  year      = {1977},
+  doi       = {10.2307/3033543}
+}
+
+% ---------------------------------------------------------------------------
+% 6. Methods
+% ---------------------------------------------------------------------------
+
+@article{clauset2009powerlaw,
+  author    = {Clauset, Aaron and Shalizi, Cosma Rohilla and Newman, M. E. J.},
+  title     = {Power-Law Distributions in Empirical Data},
+  journal   = {SIAM Review},
+  volume    = {51},
+  number    = {4},
+  pages     = {661--703},
+  year      = {2009},
+  doi       = {10.1137/070710111}
+}
+
+@article{alstott2014powerlaw,
+  author    = {Alstott, Jeff and Bullmore, Ed and Plenz, Dietmar},
+  title     = {powerlaw: A Python Package for Analysis of Heavy-Tailed Distributions},
+  journal   = {PLoS ONE},
+  volume    = {9},
+  number    = {1},
+  pages     = {e85777},
+  year      = {2014},
+  doi       = {10.1371/journal.pone.0085777}
+}
+
+@article{broido2019rare,
+  author    = {Broido, Anna D. and Clauset, Aaron},
+  title     = {Scale-Free Networks Are Rare},
+  journal   = {Nature Communications},
+  volume    = {10},
+  pages     = {1017},
+  year      = {2019},
+  doi       = {10.1038/s41467-019-08746-5}
+}
+
+@article{rossetti2018ndlib,
+  author    = {Rossetti, Giulio and Milli, Letizia and Rinzivillo, Salvatore and S{\^\i}rbu, Alina and Pedreschi, Dino and Giannotti, Fosca},
+  title     = {{NDlib}: A Python Library to Model and Analyze Diffusion Processes over Complex Networks},
+  journal   = {International Journal of Data Science and Analytics},
+  volume    = {5},
+  number    = {1},
+  pages     = {61--79},
+  year      = {2018},
+  doi       = {10.1007/s41060-017-0086-6}
+}
+
+@article{maslov2002specificity,
+  author    = {Maslov, Sergei and Sneppen, Kim},
+  title     = {Specificity and Stability in Topology of Protein Networks},
+  journal   = {Science},
+  volume    = {296},
+  number    = {5569},
+  pages     = {910--913},
+  year      = {2002},
+  doi       = {10.1126/science.1065103}
+}
+
+@article{foster2010direction,
+  author    = {Foster, Jacob G. and Foster, David V. and Grassberger, Peter and Paczuski, Maya},
+  title     = {Edge Direction and the Structure of Networks},
+  journal   = {Proceedings of the National Academy of Sciences},
+  volume    = {107},
+  number    = {24},
+  pages     = {10815--10820},
+  year      = {2010},
+  doi       = {10.1073/pnas.0912671107}
+}
+
+@article{efron1979bootstrap,
+  author    = {Efron, B.},
+  title     = {Bootstrap Methods: Another Look at the Jackknife},
+  journal   = {The Annals of Statistics},
+  volume    = {7},
+  number    = {1},
+  pages     = {1--26},
+  year      = {1979},
+  doi       = {10.1214/aos/1176344552}
+}
+
+@article{barabasi1999scaling,
+  author    = {Barab{\'a}si, Albert-L{\'a}szl{\'o} and Albert, R{\'e}ka},
+  title     = {Emergence of Scaling in Random Networks},
+  journal   = {Science},
+  volume    = {286},
+  number    = {5439},
+  pages     = {509--512},
+  year      = {1999},
+  doi       = {10.1126/science.286.5439.509}
+}
+
+% ---------------------------------------------------------------------------
+% 7. Propagation models in software ecosystems
+% ---------------------------------------------------------------------------
+
+@inproceedings{decan2018vulnerabilities,
+  author    = {Decan, Alexandre and Mens, Tom and Constantinou, Eleni},
+  title     = {On the Impact of Security Vulnerabilities in the npm Package Dependency Network},
+  booktitle = {Proceedings of the 15th International Conference on Mining Software Repositories (MSR)},
+  publisher = {ACM},
+  year      = {2018},
+  pages     = {181--191},
+  doi       = {10.1145/3196398.3196401}
+}
+
+@article{zerouali2022vulnerabilities,
+  author    = {Zerouali, Ahmed and Mens, Tom and Decan, Alexandre and De Roover, Coen},
+  title     = {On the Impact of Security Vulnerabilities in the npm and {RubyGems} Dependency Networks},
+  journal   = {Empirical Software Engineering},
+  volume    = {27},
+  number    = {5},
+  year      = {2022},
+  doi       = {10.1007/s10664-022-10154-1}
+}
+
+@inproceedings{liu2022demystifying,
+  author    = {Liu, Chengwei and Chen, Sen and Fan, Lingling and Chen, Bihuan and Liu, Yang and Peng, Xin},
+  title     = {Demystifying the Vulnerability Propagation and Its Evolution via Dependency Trees in the {NPM} Ecosystem},
+  booktitle = {Proceedings of the 44th International Conference on Software Engineering (ICSE)},
+  publisher = {ACM},
+  year      = {2022},
+  pages     = {672--684},
+  doi       = {10.1145/3510003.3510142}
+}
+
+@inproceedings{mir2023maven,
+  author    = {Mir, Amir M. and Keshani, Mehdi and Proksch, Sebastian},
+  title     = {On the Effect of Transitivity and Granularity on Vulnerability Propagation in the {Maven} Ecosystem},
+  booktitle = {2023 IEEE International Conference on Software Analysis, Evolution and Reengineering (SANER)},
+  publisher = {IEEE},
+  year      = {2023},
+  pages     = {201--211},
+  doi       = {10.1109/SANER56733.2023.00028}
+}
+
+@article{schueller2024risks,
+  author    = {Schueller, William and Wachs, Johannes},
+  title     = {Modeling Interconnected Social and Technical Risks in Open Source Software Ecosystems},
+  journal   = {Collective Intelligence},
+  volume    = {3},
+  number    = {1},
+  year      = {2024},
+  doi       = {10.1177/26339137241231912}
+}
+
+@misc{robinson2026originalsin,
+  author        = {Robinson, Michael and Halder, Sajal and Ahmed, Muhammad Ejaz and Ikram, Muhammad and Camtepe, Seyit and Kim, Hyoungshick},
+  title         = {Original Sin of npm: A Study on Vulnerability Propagation in {JavaScript} Dependency Networks},
+  year          = {2026},
+  eprint        = {2604.17668},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CR},
+  note          = {Accepted at ACM AsiaCCS 2026 per the arXiv listing},
+  url           = {https://arxiv.org/abs/2604.17668},
+  urldate       = {2026-10-26}
+}

@@ -116,6 +116,16 @@ class SIRParams:
     # Credential channel: each tick, an infected package leaks each maintainer's token with
     # this probability; the worm then republishes every package of that maintainer.
     beta_maintainer: float = 0.0
+    # "static": spec formula (hook boost on packages declaring install scripts).
+    # "injected": worm injects its script into every republished package; packages whose
+    # maintainers/CI block scripts are infected only w.p. blocked_susceptibility x beta_vu.
+    hook_mode: str = "static"
+    blocked_susceptibility: float = 0.10
+    # Max packages the worm republishes per stolen token (0 = all of the maintainer's).
+    # Shai-Hulud wave 1 capped at 20, wave 2 at 100.
+    maintainer_publish_cap: int = 0
+    # Natural patching (gamma) only starts at this tick: nobody patches before detection.
+    recovery_start: int = 0
 
 
 # --------------------------------------------------------------------------- experiments
@@ -130,23 +140,30 @@ class ExperimentConfig:
     t80_frac: float = 0.80
     n_boot: int = 1000
     # RQ1: origin topology. beta_maintainer > 0 adds the credential-channel variant.
-    rq1_params: SIRParams = SIRParams()
+    rq1_params: SIRParams = SIRParams(hook_mode="injected", maintainer_publish_cap=20)
+    # Share of packages whose maintainers/CI already block lifecycle scripts (pnpm >= 10, Bun,
+    # --ignore-scripts users) in the status quo; used by RQ1/RQ3 and the RQ2 status-quo regime.
+    baseline_scripts_blocked: float = 0.10
     rq1_beta_maintainer: tuple[float, ...] = (0.0,)
+    # Named parameter sets overriding rq1_params x rq1_beta_maintainer, e.g. calibrated waves.
+    rq1_scenarios: tuple[tuple[str, SIRParams], ...] = ()
     # RQ2: regimes x (beta, gamma) grid, outbreaks seeded from the hub origin group.
-    rq2_betas: tuple[float, ...] = (0.02, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1.0)
+    rq2_betas: tuple[float, ...] = (0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5, 0.75, 1.0)
     rq2_gammas: tuple[float, ...] = (0.02, 0.05, 0.1, 0.2, 0.4)
     rq2_beta_maintainer: tuple[float, ...] = (0.0,)
     rq2_n_runs: int = 50
     pin_fraction: float = 0.80  # strict-lockfile regimes: share of exact-pinned edges
-    hook_reduction: float = 0.70  # scripts-disabled regimes: cut of the hook boost
+    hook_reduction: float = 0.70  # static hook mode: cut of the hook boost when scripts are disabled
+    scripts_disabled_frac: float = 0.70  # injected hook mode: share of packages blocking scripts
     provenance_top: float = 0.05  # hardened: provenance on the top 5% hubs ...
     provenance_factor: float = 0.10  # ... whose stolen-token publishes succeed w.p. 0.1
     # RQ3: interventions against a hub outbreak.
-    rq3_params: SIRParams = SIRParams()
+    rq3_params: SIRParams = SIRParams(hook_mode="injected", maintainer_publish_cap=20)
     rq3_budget_fracs: tuple[float, ...] = (0.001, 0.0025, 0.005, 0.01, 0.025)
     # First tick at which reactive patching acts. A delay of 1 lets hub patching remove a hub
     # patient zero immediately, so sweep realistic detection lags as well.
     rq3_response_delays: tuple[int, ...] = (1, 5, 10, 20)
+    rq3_couple_recovery: bool = True  # natural patching (gamma) also starts at the detection delay
 
 
 # --------------------------------------------------------------------------- crawler

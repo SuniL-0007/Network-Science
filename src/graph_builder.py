@@ -104,10 +104,36 @@ def maintainer_index(g: nx.DiGraph) -> dict[str, list[str]]:
     return dict(idx)
 
 
+def spam_ring_nodes(g: nx.DiGraph, min_size: int = 10, min_density: float = 0.5,
+                    owner_share: float = 0.5) -> set:
+    """Packages of artificial mutual-dependency rings (e.g. reward-farming spam).
+
+    A ring is an SCC of at least `min_size` packages with edge density >= `min_density`;
+    legitimate monorepo cycles are far sparser. Also returns the other packages of any
+    maintainer who owns at least `owner_share` of a ring.
+    """
+    flagged: set = set()
+    for scc in nx.strongly_connected_components(g):
+        n = len(scc)
+        if n < min_size or g.subgraph(scc).number_of_edges() / (n * (n - 1)) < min_density:
+            continue
+        flagged |= scc
+        owners = maintainer_index(g.subgraph(scc))
+        spammers = {m for m, pkgs in owners.items() if len(pkgs) >= owner_share * n}
+        flagged |= {u for u, ms in g.nodes(data="maintainers") if spammers & set(ms or [])}
+    return flagged
+
+
 def build_from_records(
-    records: Iterable[PackageRecord], dep_types: Iterable[str] = INSTALLED_DEP_TYPES
+    records: Iterable[PackageRecord], dep_types: Iterable[str] = INSTALLED_DEP_TYPES,
+    drop_spam: bool = True,
 ) -> tuple[nx.DiGraph, nx.DiGraph]:
     g_dep = build_dependency_graph(records, dep_types)
+    if drop_spam:
+        spam = spam_ring_nodes(g_dep)
+        if spam:
+            log.info("Dropped %d packages in spam rings: %s", len(spam), sorted(spam)[:5])
+            g_dep.remove_nodes_from(spam)
     return g_dep, build_contagion_graph(g_dep)
 
 

@@ -119,3 +119,23 @@ def test_synthetic_contagion_hubs_have_high_out_degree():
     # the most-depended-upon package spreads to the most direct dependents
     assert g_con.out_degree(hub) == g_dep.in_degree(hub) == max(d for _, d in g_dep.in_degree())
     assert build_contagion_graph(g_con).edges == g_dep.edges
+
+
+def test_spam_rings_are_dropped_but_sparse_cycles_kept():
+    from src.graph_builder import spam_ring_nodes
+    ring = [f"fruit{i}" for i in range(12)]
+    records = [rec(u, [(v, "^1.0.0", "prod", "caret") for v in ring if v != u], maintainers=["spammer"])
+               for u in ring]
+    records.append(rec("fruit-extra", maintainers=["spammer"]))
+    mono = [f"@mono/p{i}" for i in range(12)]  # sparse legitimate cycle: a ring of 12
+    records += [rec(u, [(mono[(i + 1) % 12], "^1.0.0", "prod", "caret")], maintainers=["dev"])
+                for i, u in enumerate(mono)]
+    records.append(rec("app", [("fruit0", "^1.0.0", "prod", "caret"), ("@mono/p0", "^1.0.0", "prod", "caret")]))
+
+    g_dep = build_dependency_graph(records)
+    assert spam_ring_nodes(g_dep) == set(ring) | {"fruit-extra"}
+    g_dep, g_con = build_from_records(records)
+    assert not any(u.startswith("fruit") for u in g_con)
+    assert set(mono) <= set(g_con) and "app" in g_con
+    kept = build_from_records(records, drop_spam=False)[1]
+    assert "fruit0" in kept

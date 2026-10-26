@@ -4,6 +4,7 @@ Per run (`RunMetrics`, used as a Monte Carlo reducer inside workers):
   r_inf            final outbreak size: ever-infected / N (improvement 17a)
   r_inf_reachable  ever-infected / |dependency-reachable set of patient zero|
   t80              first tick with ever-infected >= 80% of the reachable set (NaN if never)
+  t90_final        first tick with ever-infected >= 90% of the run's own final size (plateau)
   i_max, t_peak    peak simultaneous infections and its tick
   depth_max/mean   infection-tree depth (generation) from patient zero
   hop1_share       share of non-seed infections at depth 1; hop3plus_share at depth >= 3
@@ -31,7 +32,7 @@ from src.config import METRICS_DIR
 from src.sir_engine import MAINTAINER, SEED, ContagionModel, SimulationResult
 
 RUN_METRICS = (
-    "r_inf", "r_inf_reachable", "t80", "i_max", "i_max_frac", "t_peak", "duration",
+    "r_inf", "r_inf_reachable", "t80", "t90_final", "i_max", "i_max_frac", "t_peak", "duration",
     "depth_max", "depth_mean", "hop1_share", "hop3plus_share", "maint_share", "n_patched",
 )
 
@@ -68,6 +69,7 @@ class RunMetrics:
         n_reach = self.reachable(res.patient_zero)
         cum = np.bincount(res.infection_time[infected], minlength=res.duration + 1).cumsum()
         hit80 = np.flatnonzero(cum >= self.t80_frac * n_reach)
+        t90 = int(np.flatnonzero(cum >= 0.9 * ever)[0])
         kids = res.channel > SEED
         n_kids = int(kids.sum())
         gens = res.generation[kids]
@@ -79,6 +81,7 @@ class RunMetrics:
             "r_inf": ever / n,
             "r_inf_reachable": ever / n_reach,
             "t80": float(hit80[0]) if len(hit80) else math.nan,
+            "t90_final": t90,
             "i_max": int(res.I.max()),
             "i_max_frac": float(res.I.max()) / n,
             "t_peak": int(np.argmax(res.I)),
@@ -89,6 +92,7 @@ class RunMetrics:
             "hop3plus_share": float((gens >= 3).mean()) if n_kids else math.nan,
             "maint_share": float((res.channel[kids] == MAINTAINER).mean()) if n_kids else math.nan,
             "n_patched": int(res.n_patched.sum()),
+            "n_maint_compromised": res.n_maint_compromised,
         }
         if self.keep_curves:
             out["_curves"] = np.stack([res.S, res.I, res.R]).astype(np.int32)

@@ -237,3 +237,37 @@ def test_custom_engine_matches_ndlib_on_homogeneous_graph():
     res = run_ndlib_sir(g, p, [hub], seed=1)
     assert ((res.S + res.I + res.R) == g.number_of_nodes()).all() and res.I[-1] == 0
     assert res.ever_infected == res.R[-1]
+
+
+# --------------------------------------------------------------------------- hook modes
+def test_injected_hook_mode_uses_consumer_script_blocking():
+    g = contagion([("a", "b")], hooks=("a",))
+    m = ContagionModel.from_graph(g)
+    injected = SIRParams(beta=0.8, gamma=1.0, hook_mode="injected", blocked_susceptibility=0.1)
+    # source hooks no longer matter: every infected package carries the worm's script
+    assert m.edge_betas(injected).tolist() == pytest.approx([0.8])
+    blocked = m.with_overrides(scripts_blocked=np.array([False, True]))
+    assert blocked.edge_betas(injected).tolist() == pytest.approx([0.08])
+    # the static spec formula is unchanged
+    assert m.edge_betas(SIRParams(beta=0.4, hook_mode="static")).tolist() == pytest.approx([0.5])
+    with pytest.raises(ValueError):
+        m.edge_betas(SIRParams(hook_mode="bogus"))
+
+
+def test_maintainer_publish_cap():
+    pkgs = [f"p{i}" for i in range(30)]
+    g = contagion([], nodes=["a"] + pkgs, maintainers={u: ["eve"] for u in ["a"] + pkgs})
+    m = ContagionModel.from_graph(g)
+    for cap, expected in [(0, 31), (5, 6), (20, 21)]:
+        res = simulate(m, SIRParams(beta=0.0, gamma=1.0, beta_maintainer=1.0, maintainer_publish_cap=cap), ["a"], rng=1)
+        # cap counts the patient zero's slot too when it is drawn, so allow one fewer
+        assert expected - 1 <= res.ever_infected <= expected
+
+
+def test_recovery_starts_at_detection():
+    m = ContagionModel.from_graph(CHAIN)
+    res = simulate(m, SIRParams(beta=0.0, gamma=1.0, recovery_start=5), ["a"], rng=0)
+    assert res.recovery_time[0] == 6  # first recovery draw at t=5 moves it to R at t=6
+    g = contagion([], nodes=["a", "x"], maintainers={"a": ["eve"], "x": ["eve"]})
+    res = simulate(ContagionModel.from_graph(g), SIRParams(beta=0.0, gamma=1.0, beta_maintainer=1.0), ["a"], rng=0)
+    assert res.n_maint_compromised == 1

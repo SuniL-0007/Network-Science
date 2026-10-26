@@ -146,6 +146,15 @@ def test_apply_regime(ctx):
     assert hard.provenance[top].all() and over["provenance_factor"] == 0.1
 
 
+def test_script_blocking_regimes_are_nested(ctx):
+    base = SIRParams(hook_mode="injected")
+    low, _ = apply_regime(ctx.model, Regime("a", scripts_blocked_frac=0.1), base, node_seed=7)
+    high, _ = apply_regime(ctx.model, Regime("b", scripts_blocked_frac=0.7), base, node_seed=7)
+    assert low.scripts_blocked.mean() == pytest.approx(0.1, abs=0.04)
+    assert high.scripts_blocked.mean() == pytest.approx(0.7, abs=0.06)
+    assert not (low.scripts_blocked & ~high.scripts_blocked).any()  # 10% set inside the 70% set
+
+
 def test_context_cache_roundtrip(ctx, tmp_path):
     g = ctx.graph
     first = ExperimentContext.from_graph(g, "c", metrics_dir=tmp_path)
@@ -188,6 +197,9 @@ def test_rq2(ctx):
     assert set(out["regimes"]["name"]) == {"status_quo", "strict_lockfile", "scripts_disabled", "hardened"}
     piv = s.groupby("regime")["r_inf_mean"].mean()
     assert piv["strict_lockfile"] < piv["status_quo"]
+    assert piv["scripts_disabled"] < piv["status_quo"]  # injected hook mode: blocking scripts matters
+    reg = out["regimes"].set_index("name")
+    assert reg.at["scripts_disabled", "scripts_blocked_share"] > reg.at["status_quo", "scripts_blocked_share"]
     assert piv["hardened"] <= piv["strict_lockfile"] + 0.02
     assert {"beta_c", "tau_c", "censored", "tau_c_theory"} <= set(out["thresholds"].columns)
 

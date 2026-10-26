@@ -107,6 +107,29 @@ Figures are written to `results/figures/<tag>/` as 300 DPI PNG plus vector PDF (
 | `fig4_semver_phase_transition` | R∞ heatmaps over β×γ per regime, with empirical β_c markers |
 | `fig5_firebreak_immunization` | R∞ vs. budget per strategy (95% CI), one panel per response delay |
 
+## Reproducing the paper
+
+All paper numbers come from frozen settings in `src/paper_suite.py` (1 tick = 1 hour,
+Shai-Hulud-calibrated scenarios). Exact package versions are pinned in `requirements-lock.txt`.
+
+```bash
+pip install -r requirements-lock.txt
+# 1. data (registry responses are cached in data/raw/cache/)
+python -m src.data_ingestion crawl --seeds data/raw/seeds_high_impact_dependents.txt --max-nodes 10000 --dependents --out data/raw/npm_hi_n10k.jsonl
+python -m src.data_ingestion crawl --seeds data/raw/seeds_high_impact_dependents.txt --max-nodes 5000  --max-depth 8 --dependents --out data/raw/npm_hi_n5k.jsonl
+python -m src.data_ingestion crawl --seeds data/raw/seeds_high_impact_dependents.txt --max-nodes 20000 --max-depth 8 --dependents --out data/raw/npm_hi_n14660.jsonl
+python -m src.data_ingestion synthetic --nodes 2000 --seed 42
+# 2. calibration against Shai-Hulud and empirical validation
+python -m src.calibration data/processed/npm_hi_n10k_contagion.pkl --runs 40 --jobs 7 --betas 0.005 0.01 0.02 0.05 0.1 0.2 0.3 --beta-ms 0.005 0.01 0.02 0.05 0.1 0.2 0.5
+python -m src.validation
+# 3. every experiment (main, synthetic seeds, sample sizes, null models, sensitivity)
+python -m src.paper_suite all --jobs 7
+```
+
+The crawl is a snapshot of a live registry (seed list: npm-high-impact 1.13.0; crawl date
+in each snapshot's `.meta.json`). Incident data and sources: `data/raw/incidents/`,
+`docs/incident-notes.md`. Literature: `docs/literature.md`, `docs/references.bib`.
+
 ## Tests
 
 ```bash

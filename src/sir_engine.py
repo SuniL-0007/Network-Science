@@ -9,7 +9,8 @@ Tick t -> t+1, all computed from the state at t:
   1. transmission  : each I node v infects each S successor u w.p. beta_vu
   2. credentials   : (optional) each I node leaks each maintainer w.p. beta_maintainer; the
                      worm republishes all S packages of newly compromised maintainers
-  3. recovery      : each I node -> R w.p. gamma (newly infected nodes do not recover yet)
+  3. recovery      : each I node -> R w.p. gamma from tick `recovery_start` on (detection;
+                     newly infected nodes do not recover yet)
   4. intervention  : a PatchPolicy moves up to `budget` nodes (I and/or S) to R at t+1
 Runs stop when no node is infected or t == t_max.
 """
@@ -49,6 +50,8 @@ class ContagionModel:
     maint_pkg_indptr: np.ndarray  # maintainer id -> packages
     maint_pkg: np.ndarray
     index: dict = field(repr=False, compare=False, default_factory=dict)
+    # bool per node: maintainers/CI block lifecycle scripts (used by hook_mode="injected")
+    scripts_blocked: np.ndarray | None = None
 
     @property
     def n(self) -> int:
@@ -89,23 +92,40 @@ class ContagionModel:
             maint_pkg_indptr=mp_ptr.astype(np.int64),
             maint_pkg=owners[order],
             index=index,
+            scripts_blocked=np.zeros(len(nodes), dtype=bool),
         )
 
     def idx(self, names: Sequence) -> np.ndarray:
         """Node names -> integer indices."""
         return np.array([self.index[u] for u in names], dtype=np.int64)
 
-    def with_overrides(self, w_semver=None, hook=None, provenance=None) -> ContagionModel:
+    def with_overrides(self, w_semver=None, hook=None, provenance=None, scripts_blocked=None) -> ContagionModel:
         """Copy with replaced edge modifiers / node flags (used by RQ2 regimes)."""
         changes = {k: np.asarray(v) for k, v in
-                   {"w_semver": w_semver, "hook": hook, "provenance": provenance}.items() if v is not None}
+                   {"w_semver": w_semver, "hook": hook, "provenance": provenance,
+                    "scripts_blocked": scripts_blocked}.items() if v is not None}
         return replace(self, **changes)
 
     def edge_betas(self, p: SIRParams) -> np.ndarray:
-        src = np.repeat(np.arange(self.n), self.out_degree)
-        w_hook = np.where(self.hook[src], p.hook_multiplier, 1.0)
-        w_prov = np.where(self.provenance[self.indices], p.provenance_factor, 1.0)
-        return np.minimum(1.0, p.beta * self.w_semver * w_hook * w_prov)
+        """Per-edge transmission probability beta_vu.
+
+        static   : beta * w_semver * w_hook(v) * w_prov(u), w_hook = hook_multiplier on packages
+                   that declare install scripts (the spec formula).
+        injected : the worm adds its install script to every package it republishes, so the
+                   source-side boost is uniform (absorbed in beta); instead the *consumer* matters:
+                   beta * w_semver * w_exec(u) * w_prov(u), with w_exec = blocked_susceptibility
+                   for packages whose maintainers/CI block lifecycle scripts.
+        """
+        w = p.beta * self.w_semver * np.where(self.provenance[self.indices], p.provenance_factor, 1.0)
+        if p.hook_mode == "static":
+            src = np.repeat(np.arange(self.n), self.out_degree)
+            w = w * np.where(self.hook[src], p.hook_multiplier, 1.0)
+        elif p.hook_mode == "injected":
+            if self.scripts_blocked is not None:
+                w = w * np.where(self.scripts_blocked[self.indices], p.blocked_susceptibility, 1.0)
+        else:
+            raise ValueError(f"unknown hook_mode {p.hook_mode!r}")
+        return np.minimum(1.0, w)
 
 
 def _expand(indptr: np.ndarray, rows: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -177,6 +197,7 @@ class SimulationResult:
     patient_zero: np.ndarray
     immunized: np.ndarray
     n_patched: np.ndarray  # intervention moves per tick
+    n_maint_compromised: int = 0  # maintainer tokens leaked (credential channel)
 
     @property
     def duration(self) -> int:
@@ -265,6 +286,13 @@ def simulate(
             if len(maint):
                 m_row, pos = _expand(model.maint_pkg_indptr, maint)
                 victims = model.maint_pkg[pos]
+                cap = params.maintainer_publish_cap
+                if cap > 0 and len(victims) > cap:  # worm republishes <= cap random packages per token
+                    order = np.lexsort((rng.random(len(victims)), m_row))
+                    starts = np.flatnonzero(np.r_[True, np.diff(m_row[order]) != 0])
+                    rank = np.arange(len(order)) - np.repeat(starts, np.diff(np.r_[starts, len(order)]))
+                    keep = order[rank < cap]
+                    victims, m_row = victims[keep], m_row[keep]
                 leaker = owner[np.searchsorted(maint, m_row)]
                 ok = state[victims] == S
                 victims, leaker = victims[ok], leaker[ok]
@@ -283,7 +311,8 @@ def simulate(
             srcs, chans = srcs[first], chans[first]
 
         # 3. natural recovery of nodes infected at t
-        recovered = infected[rng.random(len(infected)) < params.gamma]
+        gamma = params.gamma if t >= params.recovery_start else 0.0  # no patching before detection
+        recovered = infected[rng.random(len(infected)) < gamma]
 
         t += 1
         state[recovered] = R
@@ -304,6 +333,7 @@ def simulate(
         S=c[:, S], I=c[:, I], R=c[:, R],
         infection_time=inf_t, recovery_time=rec_t, infector=infector, channel=channel,
         generation=gen, patient_zero=pz, immunized=imm, n_patched=np.array(patched),
+        n_maint_compromised=int(maint_done.sum()),
     )
 
 
