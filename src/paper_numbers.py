@@ -414,17 +414,24 @@ def robustness() -> None:
                 continue
             d = rs.set_index("group")["r_inf_mean"]
             x = rr[(rr["delay"] == 24) & (rr["budget"] == rr["budget"].max())]
+            mid = rr[(rr["delay"] == 24) & (rr["budget"] == 50)].set_index("strategy")["delta_r_inf"]
             sens.append((b, g, d["hub"] / max(d["leaf"], 1e-9),
-                         x.sort_values("delta_r_inf", ascending=False)["strategy"].iloc[0]))
+                         x.sort_values("delta_r_inf", ascending=False)["strategy"].iloc[0],
+                         mid["hub_immunize"] > mid["firebreak_immunize"],
+                         mid["hub_immunize"] > mid["hub_patch"]))
     if all(sens):
         proactive = sum(s[3].endswith("immunize") for s in sens)
         macro("SensProactiveBest", f"{proactive}/{len(sens)}")
         macro("SensHubLeafMin", num(min(s[2] for s in sens), 1))
         macro("SensHubLeafMax", num(max(s[2] for s in sens), 1))
+        macro("SensDegreeBeatsFirebreak", f"{sum(s[4] for s in sens)}/{len(sens)}")
+        macro("SensImmBeatsPatch", f"{sum(s[5] for s in sens)}/{len(sens)}")
     else:
         macro("SensProactiveBest", None)
         macro("SensHubLeafMin", None)
         macro("SensHubLeafMax", None)
+        macro("SensDegreeBeatsFirebreak", None)
+        macro("SensImmBeatsPatch", None)
 
 
 def main() -> None:

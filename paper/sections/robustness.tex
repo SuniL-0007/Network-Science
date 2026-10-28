@@ -48,6 +48,13 @@ Three patterns stand out in \cref{tab:robustness}:
 \end{itemize}
 
 \paragraph{Parameter sensitivity.}
-Around the SH1 calibration (50 runs per setting) we vary $\beta\in\{0.01,0.02,0.05\}$ and $\gamma\in\{0.05,0.1,0.2\}$. A
-proactive strategy is the best RQ3 response at 24\,h delay in \SensProactiveBest{} of the nine
-settings. The hub-to-leaf ratio of $\Rinf$ ranges from \SensHubLeafMin{} to \SensHubLeafMax.
+Around the SH1 calibration (50 runs per setting) we vary $\beta\in\{0.01,0.02,0.05\}$ and $\gamma\in\{0.05,0.1,0.2\}$. The
+conclusions hold across all of them:
+\begin{itemize}
+  \item a proactive strategy is the best RQ3 response at 24\,h delay and the largest budget in
+        \SensProactiveBest{} settings;
+  \item at $B=50$ per hour, hub immunization beats hub patching in \SensImmBeatsPatch{} settings and
+        betweenness immunization in \SensDegreeBeatsFirebreak;
+  \item the hub-to-leaf ratio of $\Rinf$ stays between \SensHubLeafMin{} and \SensHubLeafMax, so
+        leaf-started outbreaks remain substantial whenever tokens can be stolen.
+\end{itemize}

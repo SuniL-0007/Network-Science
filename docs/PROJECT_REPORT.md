@@ -371,12 +371,11 @@ budget for every strategy):
 |---|---|---|
 | 6 synthetic graphs (different seeds) | ✅ done | Hub immunization is the best response in 6 of 6; hubs reach 38 ± 5%, leaves 5 ± 3% |
 | Sample size (5k / 10k / full closure) | ✅ done | Same qualitative pattern; SH1 leaf reach 22% / 20% / 8% of the graph |
-| Degree-preserving rewirings (null models) | ✅ 4 of 5 done, last running | Rewired graphs spread **more**: dependency-only hubs 7.6–8.1% vs 2.6%; SH1 leaves 32–43% vs 20%. npm's real wiring dampens outbreaks |
-| β × γ sensitivity around SH1 (9 settings, 50 runs each) | ⏳ running | Is the RQ3 ranking stable? |
+| 5 degree-preserving rewirings (null models) | ✅ done | Rewired graphs spread **more**: dependency-only hubs 7.6–8.1% vs 2.6%; SH1 leaves 32–43% vs 20%. npm's real wiring dampens outbreaks |
+| β × γ sensitivity around SH1 (9 settings, 50 runs each) | ✅ done | Same conclusions in **9 of 9**: proactive best at 24 h, hub immunization beats hub patching and betweenness at 50/h, hub-to-leaf ratio only 2.0–5.0 |
 | RQ2b: critical token-leak rate per regime | ✅ done | See RQ2 above: hardening raises it 7×, still not enough for SH2 |
 
-The remaining runs execute in the background with resume support. Once they finish,
-`python -m src.paper_numbers` updates every number in the paper.
+All robustness runs are complete; `python -m src.paper_numbers` regenerates every number in the paper from them.
 
 ---
 
