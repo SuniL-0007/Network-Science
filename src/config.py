@@ -139,6 +139,8 @@ class ExperimentConfig:
     major_outbreak_frac: float = 0.05  # R_inf above this counts as a major outbreak
     t80_frac: float = 0.80
     n_boot: int = 1000
+    keep_curves: bool = True  # store RQ1 S/I/R curves (needed for fig2; memory-heavy)
+    skip_existing: bool = False  # skip an RQ whose tables (incl. meta JSON) already exist
     # RQ1: origin topology. beta_maintainer > 0 adds the credential-channel variant.
     rq1_params: SIRParams = SIRParams(hook_mode="injected", maintainer_publish_cap=20)
     # Share of packages whose maintainers/CI already block lifecycle scripts (pnpm >= 10, Bun,
@@ -152,6 +154,9 @@ class ExperimentConfig:
     rq2_gammas: tuple[float, ...] = (0.02, 0.05, 0.1, 0.2, 0.4)
     rq2_beta_maintainer: tuple[float, ...] = (0.0,)
     rq2_n_runs: int = 50
+    # RQ2b: credential-channel threshold. beta fixed (SH1 calibration), beta_m swept.
+    rq2b_beta: float = 0.02
+    rq2b_beta_ms: tuple[float, ...] = (0.0005, 0.001, 0.002, 0.005, 0.01, 0.02, 0.05, 0.1, 0.2)
     pin_fraction: float = 0.80  # strict-lockfile regimes: share of exact-pinned edges
     hook_reduction: float = 0.70  # static hook mode: cut of the hook boost when scripts are disabled
     scripts_disabled_frac: float = 0.70  # injected hook mode: share of packages blocking scripts

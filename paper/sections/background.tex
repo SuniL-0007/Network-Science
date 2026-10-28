@@ -1,0 +1,88 @@
+\section{Background and Related Work}\label{sec:background}
+
+\paragraph{Package dependency networks.}
+Empirical studies of npm, PyPI, CRAN, RubyGems and Cargo describe dependency networks that grow
+super-linearly. In these networks a small number of packages accumulate very many transitive dependents,
+and trivial packages are pervasive~\citep{kikas2017structure,decan2019empirical,abdalkareem2017trivial}.
+The 2016 removal of \pkg{left-pad} showed how one tiny package can break a large part of the
+ecosystem~\citep{npm2016leftpad}. Dependents constrain the versions they accept with SemVer
+ranges~\citep{prestonwerner2013semver}. Caret (\texttt{\^{}}) and tilde (\texttt{\~{}}) ranges dominate
+in npm, so new releases propagate automatically~\citep{decan2021semver,pinckney2023semver}. This
+permissiveness speeds up the uptake of security fixes~\citep{pinckney2023semver}, and it equally speeds
+up the uptake of malicious releases.
+
+\paragraph{Supply-chain attacks on npm.}
+\citet{zimmermann2019smallworld} showed that compromising a handful of maintainer accounts would let an
+attacker reach a large fraction of npm. Taxonomies of supply-chain attacks~\citep{ohm2020backstabber,
+ladisa2023sok} catalogue the main techniques:
+\begin{itemize}
+  \item typosquatting~\citep{taylor2020typosquatting};
+  \item weak maintainer accounts~\citep{zahan2022weaklinks};
+  \item abuse of install-time lifecycle scripts~\citep{wyss2022latch}.
+\end{itemize}
+Notable incidents include \pkg{event-stream}~\citep{npm2018eventstream} and
+\pkg{ua-parser-js}~\citep{github2021uaparser}. In September 2025 the \pkg{chalk}/\pkg{debug} account
+takeover~\citep{aikido2025chalkdebug} and the s1ngularity/Nx compromise~\citep{wiz2025singularity}
+preceded two waves of self-propagating malware.
+
+\paragraph{The Shai-Hulud worms.}
+Both waves followed the same pattern. A malicious package version ran a lifecycle script on the machine
+that installed it. The script scanned for credentials, exfiltrated them to public GitHub repositories,
+and used any npm token it found to republish the token owner's packages with the payload
+injected~\citep{stepsecurity2025shaihulud,socket2025shaihulud,unit42025shaihulud,cisa2025npm}.
+\begin{itemize}
+  \item \textbf{Wave~1} (September 2025) capped republishing at 20 packages per token and compromised
+        about \ValOneListed{} packages.
+  \item \textbf{Wave~2} (November 2025) used a \pkg{preinstall} hook and a cap of 100, and compromised
+        about \ValTwoListed{}~\citep{wiz2025shaihulud2,datadog2025shaihulud2}.
+\end{itemize}
+Vendor analyses agree that the worm spread from maintainer to maintainer through installs, but
+generated most compromised packages by republishing with stolen tokens. As \citet{socket2025shaihulud}
+put it, the worm ``cannot self-propagate without those credentials''.
+
+\paragraph{Defences.}
+Three families of ecosystem defences are being deployed:
+\begin{itemize}
+  \item \textbf{Lockfiles and pinning} freeze resolved versions. They delay the uptake of malicious and
+        of benign releases alike~\citep{pinckney2023semver,zerouali2022vulnerabilities}.
+  \item \textbf{Blocking lifecycle scripts} removes the install-time execution that both waves relied
+        on. Options include npm's \texttt{--ignore-scripts}, pnpm's default since version~10, and
+        LavaMoat's allow-lists~\citep{npmdocs2026ignorescripts,pnpm2025v10,lavamoat2026allowscripts}.
+  \item \textbf{Provenance and trusted publishing} bind releases to CI identities, so a stolen
+        long-lived token is no longer enough to publish~\citep{github2023provenance,newman2022sigstore,
+        github2025trustedpublishing,slsa2023spec}.
+\end{itemize}
+After Shai-Hulud, GitHub announced token-lifetime limits, revoked classic tokens and expanded trusted
+publishing~\citep{github2025npmplan,github2025classictokens}. Compromised CI pipelines can still publish
+with valid provenance~\citep{wiz2025singularity,unit422026npmlandscape}, so these defences are partial.
+
+\paragraph{Epidemics and immunization on networks.}
+Epidemic models have been used for computer viruses since \citet{kephart1991directed} placed them on
+directed sharing graphs. They were later applied to internet worms such as Code Red~\citep{zou2002codered}.
+We build on four strands of theory:
+\begin{itemize}
+  \item \textbf{SIR dynamics.} The model goes back to \citet{kermack1927contribution}; on networks,
+        final outbreak sizes map to bond percolation~\citep{newman2002spread}.
+  \item \textbf{Epidemic thresholds.} The threshold vanishes on scale-free networks with diverging
+        degree moments~\citep{pastorsatorras2001epidemic,pastorsatorras2015review}. On general graphs it
+        is governed by the spectral radius $\lambda_{\max}$ of the contagion
+        matrix~\citep{wang2003eigenvalue,chakrabarti2008thresholds}. On directed networks $1/\lambda_{\max}$
+        is only a lower bound, and directionality raises the true
+        threshold~\citep{li2013directed,boguna2005directed}.
+  \item \textbf{Immunization.} Targeting high-degree nodes is far more effective than random
+        immunization~\citep{pastorsatorras2002immunization}. Acquaintance immunization approximates
+        targeting without global knowledge~\citep{cohen2003acquaintance}. Betweenness-based removal
+        fragments networks quickly~\citep{holme2002attack,freeman1977betweenness}, although optimized
+        strategies beat highest-betweenness heuristics~\citep{schneider2011limited,chen2008immunization}.
+  \item \textbf{Methods.} We fit heavy tails with the method of~\citet{clauset2009powerlaw}, as
+        implemented by~\citet{alstott2014powerlaw}. Strictly scale-free real networks are
+        rare~\citep{broido2019rare}.
+\end{itemize}
+
+\paragraph{Positioning.}
+Prior work on propagation in package ecosystems is mostly about the \emph{static reachability} of known
+vulnerabilities~\citep{decan2018vulnerabilities,liu2022demystifying,zerouali2022vulnerabilities,
+mir2023maven,robinson2026originalsin}. The closest dynamic model, by \citet{schueller2024risks}, couples
+dependency and shared-maintainer failures in Rust, but it models non-adversarial maintainer exit. To our
+knowledge, no prior work models self-propagating npm worms as an epidemic process with a credential
+channel, calibrates such a model to observed incidents, or evaluates ecosystem defences against it.

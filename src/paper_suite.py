@@ -77,23 +77,31 @@ def part_main(cfg: ExperimentConfig) -> None:
         run_experiments(ctx, (1, 2, 3), cfg)
 
 
+# Robustness parts do not need RQ1 curves (fig2 uses the main runs); dropping them saves memory.
 def part_seeds(cfg: ExperimentConfig) -> None:
-    run_synthetic_ensemble([1, 2, 3, 4, 5], 2000, cfg)
+    run_synthetic_ensemble([1, 2, 3, 4, 5], 2000, replace(cfg, keep_curves=False))
 
 
 def part_sizes(cfg: ExperimentConfig) -> None:
-    run_sample_sizes([NPM_5K, NPM_FULL], cfg)
+    run_sample_sizes([NPM_5K, NPM_FULL], replace(cfg, keep_curves=False))
 
 
 def part_null(cfg: ExperimentConfig) -> None:
-    run_null_models(_graph_path(NPM_10K), 5, cfg, rqs=(1, 3))
+    run_null_models(_graph_path(NPM_10K), 5, replace(cfg, keep_curves=False), rqs=(1, 3))
 
 
 def part_sensitivity(cfg: ExperimentConfig) -> None:
-    run_sensitivity(_graph_path(NPM_10K), [0.01, 0.02, 0.05], [0.05, 0.1, 0.2], cfg, base=SH1)
+    run_sensitivity(_graph_path(NPM_10K), [0.01, 0.02, 0.05], [0.05, 0.1, 0.2],
+                    replace(cfg, keep_curves=False), base=SH1)
 
 
-PARTS = {"main": part_main, "seeds": part_seeds, "sizes": part_sizes, "null": part_null,
+def part_credential(cfg: ExperimentConfig) -> None:
+    """RQ2b on the main npm graph: critical beta_m per regime (credential channel)."""
+    ctx = ExperimentContext.from_graph(PROCESSED_DIR / "npm_hi_n10k_contagion.pkl")
+    run_experiments(ctx, ("2b",), cfg)
+
+
+PARTS = {"main": part_main, "credential": part_credential, "seeds": part_seeds, "sizes": part_sizes, "null": part_null,
          "sensitivity": part_sensitivity}
 
 
@@ -102,11 +110,14 @@ def _cli(argv: list[str] | None = None) -> None:
     p.add_argument("parts", nargs="+", choices=[*PARTS, "all"])
     p.add_argument("--jobs", type=int, default=1)
     p.add_argument("--runs", type=int, help="override Monte Carlo runs (smoke tests)")
+    p.add_argument("--resume", action="store_true", help="skip RQs whose tables already exist")
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     logging.getLogger("fontTools").setLevel(logging.WARNING)
 
     over = {"n_runs": args.runs, "rq2_n_runs": args.runs} if args.runs else {}
+    if args.resume:
+        over["skip_existing"] = True
     cfg = paper_config(args.jobs, **over)
     METRICS_DIR.mkdir(parents=True, exist_ok=True)
     (METRICS_DIR / "paper_config.json").write_text(json.dumps(asdict(cfg), indent=2, default=str), encoding="utf-8")

@@ -1,0 +1,50 @@
+\documentclass[11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+\graphicspath{{../results/figures/npm_hi_n10k_contagion/}{../results/figures/}}
+
+\input{generated/numbers}
+
+\newcommand{\Rinf}{R_\infty}
+\newcommand{\pkg}[1]{\texttt{#1}}
+
+\title{Super-Spreaders, Firebreaks and Stolen Tokens:\\
+SIR Modelling of Self-Propagating Worms in the npm Dependency Network}
+\author{Author names withheld for draft}
+\date{Draft --- \today}
+
+\begin{document}
+\maketitle
+
+\input{sections/abstract}
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/data}
+\input{sections/model}
+\input{sections/calibration}
+\input{sections/results}
+\input{sections/robustness}
+\input{sections/discussion}
+\input{sections/conclusion}
+
+\bibliographystyle{plainnat}
+\bibliography{../docs/references}
+
+\end{document}

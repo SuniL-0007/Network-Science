@@ -1,0 +1,12 @@
+\section{Conclusion}\label{sec:conclusion}
+
+We modelled self-propagating npm worms as a two-channel SIR epidemic and calibrated it to the two
+Shai-Hulud waves. We validated its structure against the real victims, who cluster by shared maintainer
+rather than by dependency links. We then used the model to evaluate where outbreaks start, which
+ecosystem regimes change the epidemic threshold, and how to spend a limited response budget.
+
+Dependency topology alone confines outbreaks to the dependents of a few hubs, and dependency-side
+hardening raises that bound further. Stolen publish tokens remove it: with Shai-Hulud-like dynamics, a
+worm that enters the high-impact core from an obscure leaf package can reach a large part of it, and
+reactive patching after a day's delay barely helps. Breaking the credential channel, and proactively
+protecting the most-depended-upon packages, are the most effective measures against the next worm.

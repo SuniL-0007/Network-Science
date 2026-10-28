@@ -1,0 +1,35 @@
+\section{Robustness}\label{sec:robustness}
+
+\paragraph{Synthetic ensemble.}
+Across \SynSeeds{} synthetic scale-free graphs (DAGs with $n=\SynN$) under SH1 parameters, hub-seeded
+outbreaks reach $\SynHubMean\pm\SynHubSD$ and leaf-seeded ones $\SynLeafMean\pm\SynLeafSD$ (mean
+$\pm$ s.d.\ across seeds). Hub immunization is the best RQ3 strategy at 24\,h delay and maximum budget
+in \SynRQThreeBestCount{} graphs. The qualitative RQ1 and RQ3 conclusions therefore do not depend on the
+particular structure of the npm crawl. The synthetic graphs differ from npm in the size of the credential
+effect: leaves reach much less, because synthetic maintainer portfolios are smaller and assigned
+independently of the topology.
+
+\paragraph{Sample size and null models.}
+\Cref{tab:robustness} repeats the key quantities on three graph variants:
+\begin{itemize}
+  \item the 5k sample;
+  \item the full 14{,}624-package closure;
+  \item five degree-preserving rewirings of the main graph~\citep{maslov2002specificity}. These keep every
+        package's in- and out-degree and the SemVer mix, but randomise who depends on whom.
+\end{itemize}
+The rewirings keep maintainer ownership fixed, so they separate the role of dependency structure from
+that of the credential channel.
+
+\begin{table}[t]
+\centering
+\caption{Robustness of the key quantities across graph variants. $\Rinf$ values are means over 1{,}000
+runs per origin group.}
+\label{tab:robustness}
+\small
+\input{generated/tab_robustness}
+\end{table}
+
+\paragraph{Parameter sensitivity.}
+Around the SH1 calibration we vary $\beta\in\{0.01,0.02,0.05\}$ and $\gamma\in\{0.05,0.1,0.2\}$. A
+proactive strategy is the best RQ3 response at 24\,h delay in \SensProactiveBest{} of the nine
+settings. The hub-to-leaf ratio of $\Rinf$ ranges from \SensHubLeafMin{} to \SensHubLeafMax.

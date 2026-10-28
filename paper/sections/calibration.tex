@@ -1,0 +1,73 @@
+\section{Calibration and Empirical Validation}\label{sec:calibration}
+
+\subsection{Incident data}
+We compiled the packages compromised in both Shai-Hulud waves from public indicator lists and vendor
+reports~\citep{stepsecurity2025shaihulud,socket2025shaihulud,wiz2025shaihulud2,datadog2025shaihulud2}.
+This gives \ValOneListed{} packages for wave~1 and \ValTwoListed{} for wave~2. Publish timestamps come
+from registry metadata, which survives takedown. Three facts from the incidents anchor the calibration:
+\begin{enumerate}
+  \item \textbf{Detection lag.} Wave~1 went about 24\,h from the first malicious publish to the first
+        public signal. Wave~2 was flagged by automated feeds within minutes.
+  \item \textbf{Plateau.} 90\% of the compromised versions had appeared 37\,h (wave~1) and 13.4\,h
+        (wave~2) after the first publish.
+  \item \textbf{Mechanism.} Most compromised packages were produced by stolen-token republishing.
+        Publish bursts match the per-token caps, and only about 230 of the about 800 wave-2 packages have
+        any dependents at all. We therefore target a credential-channel share of 75\%.
+\end{enumerate}
+
+\subsection{Calibration}
+We grid-search $\beta\in[0.005,0.3]$, $\beta_m\in[0.005,0.5]$ and $\gamma\in[0.05,0.4]$ on the main graph,
+with each wave's cap and detection tick fixed. Each configuration gets 40 runs, each from a uniformly
+random patient zero. Plateau time and channel share are evaluated on major outbreaks only, since the
+observed waves are by definition outbreaks that took off. The loss is the squared log-error of the
+median $T_{90}$ plus the squared, scaled error of the channel share.
+
+Both best fits lie inside the grid:
+\begin{itemize}
+  \item \textbf{SH1-calibrated:} $\beta=\CalOneBeta$, $\beta_m=\CalOneBetaM$, $\gamma=\CalOneGamma$,
+        giving a plateau at $T_{90}=\CalOneTninety$\,h with \CalOneShare{} of infections via the
+        credential channel.
+  \item \textbf{SH2-calibrated:} $\beta=\CalTwoBeta$, $\beta_m=\CalTwoBetaM$, $\gamma=\CalTwoGamma$,
+        giving $T_{90}=\CalTwoTninety$\,h and a credential share of \CalTwoShare.
+\end{itemize}
+
+The data constrain transmission well. Configurations within a loss tolerance of 0.1 of the optimum span
+$\beta\in\CalOneBetaRange$ and $\beta_m\in\CalOneBetaMRange$ for wave~1, and $\beta\in\CalTwoBetaRange$
+and $\beta_m\in\CalTwoBetaMRange$ for wave~2. They do not identify $\gamma$, since every value we tried
+fits, nor the absolute outbreak size, since median major-outbreak sizes range over \CalOneSizeRange{}
+packages for wave~1.
+
+We therefore treat outbreak sizes in the high-impact core as \emph{projections}. They answer the
+question ``what if a worm with Shai-Hulud's dynamics reached the core?'', not ``what did Shai-Hulud
+do''.
+
+\subsection{Validation of the channel structure}
+If the credential channel dominates, victims should cluster by shared maintainer much more than by
+dependency links. We fetched current registry metadata, never package contents, for
+\ValOneN{} of the wave-1 and \ValTwoN{} of the wave-2 packages. We then compared them with random sets of
+equal size drawn from the full closure (\cref{tab:validation}).
+
+\begin{table}[t]
+\centering
+\caption{Clustering of real Shai-Hulud victims. A package counts as \emph{co-maintained} if it shares a
+maintainer with another victim, and as \emph{dependency-linked} if it has an installed dependency edge to
+another victim. The null is the mean over 200 random sets of equal size from the full closure. The last
+column counts victims present in the full-closure graph.}
+\label{tab:validation}
+\input{generated/tab_validation}
+\end{table}
+
+The pattern is clear:
+\begin{itemize}
+  \item \ValOneCoMaint{} of wave-1 victims share a maintainer with another victim, against
+        \ValOneCoMaintNull{} in the null. For wave~2 the figures are \ValTwoCoMaint{} and
+        \ValTwoCoMaintNull.
+  \item Installed dependency links are much rarer: \ValOneDepLinked{} and \ValTwoDepLinked{} of victims.
+  \item Almost no victims belong to the high-impact core: \ValOneInFull{} wave-1 and \ValTwoInFull{}
+        wave-2 packages appear in the full closure.
+\end{itemize}
+
+The null is drawn from the high-impact closure, where monorepo organisations inflate co-maintenance, so
+the contrast is conservative. Taken together, the evidence shows that the real waves spread through
+stolen tokens among the periphery's small maintainers. Our experiments ask what happens when such a worm
+enters the core.

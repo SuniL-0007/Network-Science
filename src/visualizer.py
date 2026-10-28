@@ -117,6 +117,7 @@ def _with_scenario(df: pd.DataFrame) -> pd.DataFrame:
 
 def _scenario_title(scenario: str) -> str:
     named = {"dependency_only": "Dependency channel only", "beta_m=0": "Dependency channel only",
+             "spec_reference": "Spec reference (β=0.15, γ=0.05)",
              "SH1_calibrated": "Shai-Hulud 1 calibration", "SH2_calibrated": "Shai-Hulud 2 calibration"}
     return named.get(scenario, scenario.replace("_", " ").replace("beta_m=", "+ credential channel β_m = "))
 
@@ -125,7 +126,8 @@ def fig2_sir_curves(curves: pd.DataFrame, n_nodes: int, out_dir: Path, name: str
                     scenario: str | None = None, t_max: int | None = None) -> list[Path]:
     """Mean S/I/R share over time with the 95% CI of the mean and the 2.5-97.5% run envelope."""
     curves = _with_scenario(curves)
-    scenario = scenario or curves["scenario"].iloc[0]
+    present = list(dict.fromkeys(curves["scenario"]))
+    scenario = scenario or ("SH1_calibrated" if "SH1_calibrated" in present else present[0])
     data = curves[curves["scenario"] == scenario]
     groups = [g for g in GROUP_ORDER if g in set(data["group"])]
     fig, axes = plt.subplots(1, len(groups), figsize=(2.3 * len(groups) + 0.6, 2.8), sharey=True, squeeze=False)
@@ -141,7 +143,7 @@ def fig2_sir_curves(curves: pd.DataFrame, n_nodes: int, out_dir: Path, name: str
                             color=color, alpha=0.30, lw=0)
             ax.plot(d["tick"], d[f"{comp}_mean"] / n_nodes, color=color, label=comp)
         ax.set_title(f"{group.capitalize()} origin")
-        ax.set_xlabel("Tick t")
+        ax.set_xlabel("Time t (hours)")
         ax.set_xlim(0, t_max)
     axes[0][0].set_ylabel("Share of packages (log)")
     axes[0][0].set_yscale("log")  # S stays near 1 while I and R span 1/N .. 1
@@ -263,8 +265,8 @@ def fig5_firebreak_immunization(summary: pd.DataFrame, out_dir: Path, name: str)
             ax.fill_between(x, g["r_inf_ci_lo"], g["r_inf_ci_hi"], color=color, alpha=0.18, lw=0)
             ax.plot(x, g["r_inf_mean"], color=color, marker=marker, ms=5, mec=SURFACE, mew=0.8, label=label)
         ax.set_xscale("log")
-        ax.set_title("Detection at t = 1" if delay in (None, 1) else f"Detection delay {delay} ticks")
-        ax.set_xlabel("Budget B (% of packages per tick)")
+        ax.set_title("Detection after 1 h" if delay in (None, 1) else f"Detection after {delay} h")
+        ax.set_xlabel("Budget B (% of packages per hour)")
         ax.xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(lambda v, _: f"{v:g}"))
     axes[0][0].set_ylabel("Final outbreak size R∞")
     axes[0][0].set_ylim(bottom=0)

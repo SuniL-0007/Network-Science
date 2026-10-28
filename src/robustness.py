@@ -22,7 +22,7 @@ import numpy as np
 
 from src.config import METRICS_DIR, PROCESSED_DIR, ExperimentConfig, SIRParams, SyntheticConfig
 from src.data_ingestion import generate_synthetic_records, load_records
-from src.experiments import ExperimentContext, run_experiments
+from src.experiments import ExperimentContext, rq_done, run_experiments
 from src.graph_builder import build_from_records, load_graph, save_graph
 
 log = logging.getLogger(__name__)
@@ -67,6 +67,9 @@ def rewire_degree_preserving(g: nx.DiGraph, swaps_per_edge: float = 10.0, seed: 
 
 # =========================================================================== suite parts
 def _run(g: nx.DiGraph, tag: str, cfg: ExperimentConfig, rqs, metrics_dir: Path, save_dir: Path | None) -> None:
+    if cfg.skip_existing and all(rq_done(tag, k, metrics_dir, cfg) for k in rqs):
+        log.info("%s: all RQs already done, skipping", tag)
+        return
     if save_dir is not None:
         save_graph(g, save_dir / tag, graphml=False)
     ctx = ExperimentContext.from_graph(g, tag, metrics_dir=metrics_dir, use_cache=False)

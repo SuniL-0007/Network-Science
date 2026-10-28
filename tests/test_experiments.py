@@ -235,3 +235,35 @@ def test_run_experiments_writes_files(ctx, tmp_path):
         for t in tables:
             ext = "json" if t == "meta" else "csv"
             assert f"t500_rq{k}_{t}.{ext}" in names
+
+
+def test_skip_existing_and_no_curves(ctx, tmp_path):
+    from dataclasses import replace as dc_replace
+    cfg = ExperimentConfig(n_runs=2, n_boot=50, rq3_budget_fracs=(0.01,), rq3_response_delays=(1,),
+                           keep_curves=False, skip_existing=True)
+    first = run_experiments(ctx, (1,), cfg, out_dir=tmp_path)
+    assert "curves" not in first[1] and not (tmp_path / "t500_rq1_curves.csv").exists()
+    again = run_experiments(ctx, (1, 3), cfg, out_dir=tmp_path)
+    assert set(again) == {3}  # RQ1 skipped, RQ3 run
+    assert set(run_experiments(ctx, (1,), dc_replace(cfg, skip_existing=False), out_dir=tmp_path)) == {1}
+
+
+def test_skip_existing_ignores_tables_from_other_settings(ctx, tmp_path):
+    from dataclasses import replace as dc_replace
+    smoke = ExperimentConfig(n_runs=1, n_boot=50, keep_curves=False, skip_existing=True)
+    run_experiments(ctx, (1,), smoke, out_dir=tmp_path)
+    full = dc_replace(smoke, n_runs=2, n_jobs=3)  # different runs -> stale; n_jobs is ignored
+    assert set(run_experiments(ctx, (1,), full, out_dir=tmp_path)) == {1}
+    assert set(run_experiments(ctx, (1,), dc_replace(full, n_jobs=1), out_dir=tmp_path)) == set()
+
+
+def test_rq2b_credential_threshold(ctx):
+    from src.experiments import run_rq2b
+    cfg = ExperimentConfig(rq2_n_runs=4, n_boot=50, rq2_gammas=(0.05, 0.4), rq2b_beta=0.02,
+                           rq2b_beta_ms=(0.0, 0.05, 1.0))
+    out = run_rq2b(ctx, cfg)
+    assert len(out["summary"]) == 4 * 3 * 2
+    assert {"beta_m_c", "tau_m_c", "censored"} <= set(out["thresholds"].columns)
+    s = out["summary"]
+    sq = s[(s["regime"] == "status_quo") & (s["gamma"] == 0.05)].set_index("beta_maintainer")["r_inf_mean"]
+    assert sq[1.0] >= sq[0.0]

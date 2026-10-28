@@ -1,0 +1,44 @@
+\section{Discussion}\label{sec:discussion}
+
+\paragraph{Implications for defenders.}
+Our results point to a clear order of priorities.
+\begin{enumerate}
+  \item \textbf{Credentials first.} The credential channel turns a bounded, hub-dependent process into
+        one that can take over the core from almost any origin (RQ1). It also removes the epidemic
+        threshold that dependency-side defences create (RQ2). Measures that break this channel therefore
+        address the mechanism that actually drove both Shai-Hulud waves: short-lived and scoped tokens,
+        trusted publishing that makes stolen tokens useless, and caps or rate limits on publishing from a
+        single credential.
+  \item \textbf{Then dependency hardening.} Lockfiles and blocking lifecycle scripts are still valuable.
+        They raise the dependency-channel threshold by roughly an order of magnitude, and script blocking
+        directly stops the install-time execution that harvests tokens. However, they are not sufficient
+        while tokens remain stealable.
+  \item \textbf{Proactive protection over reactive patching.} With limited response capacity and
+        detection lags of a day, protecting the most-depended-upon packages in advance beats chasing
+        infected ones. Degree is a better target than betweenness under the credential channel.
+\end{enumerate}
+Lockfiles have a known cost: they slow the uptake of security fixes~\citep{pinckney2023semver}. And as
+the s1ngularity and Mini Shai-Hulud incidents show, trusted publishing does not protect against a
+compromised CI pipeline~\citep{wiz2025singularity,unit422026npmlandscape}.
+
+\paragraph{Limitations.}
+\begin{itemize}
+  \item \textbf{Scope of the graph.} Our graph is the high-impact core, not all of npm. The real waves
+        mostly struck peripheral packages (\cref{sec:calibration}), so absolute outbreak sizes in the
+        core are projections. Calibration identifies dynamics (timescales and channel shares), not size.
+  \item \textbf{Upper-bound assumptions.} The credential channel assumes that every infected package
+        can leak its maintainers' tokens. Real leakage depends on whether a token was present on the
+        infected machine, so our $\beta_m$ absorbs this probability.
+  \item \textbf{Current metadata.} Maintainer lists and dependencies were fetched in 2026, not as they
+        were at the time of the incidents.
+  \item \textbf{Assumed adoption shares.} The shares of packages that block scripts (10\% and 70\%) are
+        assumptions; we found no reliable measurement of them.
+  \item \textbf{Static immunization.} Our immunization sets are static. Recalculated betweenness or
+        optimized sets could perform better~\citep{holme2002attack,schneider2011limited}.
+  \item \textbf{Remaining data quality.} A 17-package, low-density cluster of oddly named packages
+        remains in the full closure below our spam threshold.
+\end{itemize}
+
+\paragraph{Ethics.}
+We never downloaded, installed or executed compromised packages. Validation uses registry metadata and
+public indicator lists only.

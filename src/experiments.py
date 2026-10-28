@@ -130,13 +130,16 @@ def run_rq1(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig()) 
                                   tag={"scenario": scenario, "beta_maintainer": params.beta_maintainer,
                                        "group": group.removeprefix("origin_"), "origin": origin}))
     log.info("RQ1: %d configurations x %d runs", len(jobs), cfg.n_runs)
-    results = run_batch(status_quo_model(ctx, cfg), jobs, _reducer(ctx, cfg, curves=True), cfg.n_jobs)
+    results = run_batch(status_quo_model(ctx, cfg), jobs, _reducer(ctx, cfg, curves=cfg.keep_curves), cfg.n_jobs)
     runs, curves = _frame(jobs, results)
 
     by = ["scenario", "beta_maintainer", "group"]
     summary = summarize_runs(runs, by, major_frac=cfg.major_outbreak_frac, n_boot=cfg.n_boot)
     per_origin = summarize_runs(runs, by + ["origin"], metrics=("r_inf", "t80"),
                                 major_frac=cfg.major_outbreak_frac, n_boot=cfg.n_boot)
+    tables = {"runs": runs, "summary": summary, "per_origin": per_origin}
+    if not cfg.keep_curves:
+        return tables
     curve_frames = []
     length = max(p.t_max for _, p in rq1_scenarios(cfg)) + 1
     flat = [c for job_curves in curves for c in job_curves]  # aligned with runs' row index
@@ -146,8 +149,7 @@ def run_rq1(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig()) 
         sub.insert(0, "beta_maintainer", bm)
         sub.insert(0, "scenario", scenario)
         curve_frames.append(sub)
-    return {"runs": runs, "summary": summary, "per_origin": per_origin,
-            "curves": pd.concat(curve_frames, ignore_index=True)}
+    return {**tables, "curves": pd.concat(curve_frames, ignore_index=True)}
 
 
 # =========================================================================== RQ2
@@ -253,6 +255,36 @@ def run_rq2(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig(),
             "regimes": pd.DataFrame(regime_rows)}
 
 
+def run_rq2b(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig(),
+             regimes: list[Regime] | None = None) -> dict[str, pd.DataFrame]:
+    """Credential-channel threshold: with tokens stealable, beta_c collapses, so sweep beta_m
+    at fixed beta (`rq2b_beta`) per regime and gamma, and estimate the critical beta_m."""
+    regimes = regimes or default_regimes(cfg)
+    base = replace(cfg.rq1_params, beta=cfg.rq2b_beta)
+    models, overrides = {}, {}
+    for r in regimes:
+        models[r.name], overrides[r.name] = apply_regime(ctx.model, r, base, seed_for(cfg, "regime", r.name),
+                                                         node_seed=seed_for(cfg, "scripts"))
+    origin = ctx.draw_from("origin_hub")
+    jobs = []
+    for r in regimes:
+        for bm in cfg.rq2b_beta_ms:
+            for gamma in cfg.rq2_gammas:
+                params = replace(base, gamma=gamma, beta_maintainer=bm, **overrides[r.name])
+                jobs.append(MCJob(params, origin, cfg.rq2_n_runs, seed_for(cfg, "rq2b", bm, gamma),
+                                  model_key=r.name,
+                                  tag={"regime": r.name, "beta": cfg.rq2b_beta, "beta_maintainer": bm,
+                                       "gamma": gamma}))
+    log.info("RQ2b: %d configurations x %d runs", len(jobs), cfg.rq2_n_runs)
+    runs, _ = _frame(jobs, run_batch(models, jobs, _reducer(ctx, cfg), cfg.n_jobs))
+    by = ["regime", "beta", "beta_maintainer", "gamma"]
+    summary = summarize_runs(runs, by, metrics=("r_inf", "t90_final", "maint_share", "i_max_frac"),
+                             major_frac=cfg.major_outbreak_frac, n_boot=cfg.n_boot)
+    thresholds = estimate_threshold(summary, by=("regime", "gamma"), level=cfg.major_outbreak_frac,
+                                    x="beta_maintainer").rename(columns={"beta_c": "beta_m_c", "tau_c": "tau_m_c"})
+    return {"runs": runs, "summary": summary, "thresholds": thresholds}
+
+
 # =========================================================================== RQ3
 def _acquaintance_sampler(graph: nx.DiGraph, nodes: list, k: int):
     """Acquaintance immunization (Cohen et al. 2003): random node -> immunize a random
@@ -335,7 +367,28 @@ def run_rq3(ctx: ExperimentContext, cfg: ExperimentConfig = ExperimentConfig()) 
 
 
 # =========================================================================== orchestration
-RUNNERS = {1: run_rq1, 2: run_rq2, 3: run_rq3}
+RUNNERS = {1: run_rq1, 2: run_rq2, "2b": run_rq2b, 3: run_rq3}
+
+
+_IGNORED_CFG_KEYS = {"n_jobs", "skip_existing", "keep_curves"}
+
+
+def _cfg_fingerprint(cfg_dict: dict) -> str:
+    return json.dumps({k: v for k, v in cfg_dict.items() if k not in _IGNORED_CFG_KEYS},
+                      sort_keys=True, default=str)
+
+
+def rq_done(tag: str, k: int, out_dir: Path = METRICS_DIR, cfg: ExperimentConfig | None = None) -> bool:
+    """True when RQk's tables for `tag` were fully written (the meta JSON is written last)
+    and, if `cfg` is given, by a run with the same settings (run counts, seeds, grids, ...)."""
+    meta = out_dir / f"{tag}_rq{k}_meta.json"
+    if not (meta.exists() and (out_dir / f"{tag}_rq{k}_summary.csv").exists()):
+        return False
+    if cfg is None:
+        return True
+    saved = json.loads(meta.read_text(encoding="utf-8")).get("config", {})
+    current = json.loads(json.dumps(asdict(cfg), default=str))
+    return _cfg_fingerprint(saved) == _cfg_fingerprint(current)
 
 
 def run_experiments(ctx: ExperimentContext, rqs=(1, 2, 3), cfg: ExperimentConfig = ExperimentConfig(),
@@ -343,6 +396,9 @@ def run_experiments(ctx: ExperimentContext, rqs=(1, 2, 3), cfg: ExperimentConfig
     """Run the selected RQs and write `<tag>_rq<k>_<table>.csv` plus a meta JSON each."""
     out = {}
     for k in rqs:
+        if cfg.skip_existing and rq_done(ctx.tag, k, out_dir, cfg):
+            log.info("RQ%d for %s already done, skipping", k, ctx.tag)
+            continue
         tables = RUNNERS[k](ctx, cfg)
         meta = {"tag": ctx.tag, "rq": k, "n_nodes": ctx.model.n, "config": asdict(cfg)}
         paths = write_tables(tables, f"{ctx.tag}_rq{k}", out_dir, meta)

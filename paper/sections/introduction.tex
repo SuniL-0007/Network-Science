@@ -1,0 +1,71 @@
+\section{Introduction}\label{sec:intro}
+
+Modern JavaScript applications are assembled from hundreds of npm packages. Each package declares its
+own dependencies through SemVer ranges, and package managers resolve and install these transitively.
+This creates a dense, directed web of trust. A compromise of a single widely used package can reach a
+large part of the ecosystem~\citep{zimmermann2019smallworld,kikas2017structure,decan2019empirical}.
+The exposure is no longer hypothetical. Account takeovers and malicious maintainer handovers have
+repeatedly delivered malware through trusted packages~\citep{npm2018eventstream,github2021uaparser,
+aikido2025chalkdebug,ohm2020backstabber}.
+
+In 2025 the threat changed qualitatively, as worms began to propagate themselves:
+\begin{itemize}
+  \item \textbf{Shai-Hulud} (September) ran a malicious script at install time. The script harvested
+        npm publish tokens from developer machines and CI runners, then used each stolen token to
+        republish up to \CalOneCap{} of the victim's own packages with the same payload
+        injected~\citep{stepsecurity2025shaihulud,socket2025shaihulud,cisa2025npm}.
+  \item \textbf{Shai-Hulud~2.0} (November) used a preinstall hook and raised the per-token cap to
+        \CalTwoCap{} packages~\citep{wiz2025shaihulud2,datadog2025shaihulud2}.
+\end{itemize}
+Each newly infected package infected whoever installed it next. Spread was limited only by detection and
+registry intervention. These incidents raise network-scientific questions that static vulnerability
+reachability studies~\citep{decan2018vulnerabilities,liu2022demystifying,zerouali2022vulnerabilities}
+cannot answer:
+\begin{itemize}
+  \item How do the topology of the dependency graph and the ownership structure of maintainer accounts
+        jointly determine how far and how fast such a worm spreads?
+  \item Which ecosystem-level defences change the epidemic threshold?
+  \item Under realistic detection delays, should a limited response capacity go to patching what is
+        already infected, or to hardening what is not?
+\end{itemize}
+
+We address these questions with an SIR epidemic model of the npm ecosystem that has two contagion
+channels:
+\begin{itemize}
+  \item a \emph{dependency channel}, in which a compromised package exposes its dependents with a
+        probability that depends on the dependents' SemVer constraints and on whether they execute
+        lifecycle scripts;
+  \item a \emph{credential channel}, in which a compromised package's maintainer token is stolen and
+        the worm republishes a capped number of that maintainer's packages.
+\end{itemize}
+
+We study three research questions:
+\begin{description}
+  \item[RQ1 (origin topology).] How much do outbreak size and speed depend on where the worm starts:
+        a hub, a bridge, a mid-tier or a leaf package?
+  \item[RQ2 (ecosystem regimes).] How do strict lockfiles, disabled lifecycle scripts and trusted
+        publishing shift the epidemic threshold?
+  \item[RQ3 (interventions).] At a fixed response budget, how does reactive patching compare with
+        proactive immunization under realistic detection delays?
+\end{description}
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item \textbf{Model.} We give, to our knowledge, the first epidemic-dynamics model of self-propagating
+        npm worms that couples a SemVer-weighted dependency channel with a stolen-token credential
+        channel (\cref{sec:model}).
+  \item \textbf{Data.} We provide a cleaned \MainN-package npm dependency graph, built from the
+        registry with provenance, install-script and maintainer metadata, plus a full-closure variant
+        and a synthetic benchmark (\cref{sec:data}). Cleaning removes a reward-farming spam ring that
+        on its own would have dominated the spectral analysis.
+  \item \textbf{Calibration and validation.} We calibrate the model to the timelines of both Shai-Hulud
+        waves and validate its channel structure against the real lists of compromised packages
+        (\cref{sec:calibration}).
+  \item \textbf{Evidence on defences.} We show that credential compromise, not dependency topology,
+        governs the reach of a worm (RQ1). Dependency-side hardening raises the epidemic threshold only
+        while tokens cannot be stolen (RQ2). Proactive immunization of high-degree packages
+        outperforms reactive patching once detection takes between 12 and 24 hours or more (RQ3,
+        \cref{sec:results}). Null models, synthetic ensembles, sample sizes and parameter sweeps test
+        the robustness of these findings (\cref{sec:robustness}).
+\end{enumerate}
+Code, data snapshots and the frozen experiment configuration are released with the paper.

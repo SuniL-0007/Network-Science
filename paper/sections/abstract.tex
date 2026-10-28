@@ -1,0 +1,37 @@
+\begin{abstract}
+In September and November 2025 the self-propagating worms Shai-Hulud and Shai-Hulud~2.0 compromised
+roughly \ValOneListed{} and \ValTwoListed{} npm packages. They did so by stealing maintainers' publish
+tokens during package installation and republishing those maintainers' packages with an injected
+install script. We model such worms as a two-channel SIR epidemic on the npm ecosystem.
+\begin{itemize}
+  \item \textbf{Dependency channel.} A compromised dependency exposes its dependents, weighted by how
+        permissive each SemVer range is and by whether consumers block lifecycle scripts.
+  \item \textbf{Credential channel.} A leaked token lets the worm republish up to a capped number of
+        the owner's packages.
+\end{itemize}
+
+Our main data set is a \MainN-package graph built from the npm registry. It is the dependency closure
+of the \NSeeds{} most-depended-upon packages, cleaned of a reward-farming spam ring.
+
+\textbf{Calibration and validation.} With one tick equal to one hour, we calibrate transmission,
+credential and patching rates to the observed plateau times and stolen-token share of both waves.
+Against the real compromised-package lists, victims share a maintainer with another victim far more
+often than random package sets do (\ValOneCoMaint{} vs.\ \ValOneCoMaintNull{} for wave~1, \ValTwoCoMaint{}
+vs.\ \ValTwoCoMaintNull{} for wave~2). They are almost absent from the high-impact core.
+
+\textbf{Findings.}
+\begin{itemize}
+  \item With dependencies alone, spread is bounded: outbreaks started at the most-depended-upon packages
+        reach only \RQOneDepOnlyHub{} of the core, and leaf-started outbreaks fizzle.
+  \item With the calibrated credential channel, even a leaf patient zero reaches \RQOneShOneLeaf{}
+        (wave~1 parameters) to \RQOneShTwoLeaf{} (wave~2) of the core.
+  \item Strict lockfiles and script blocking raise the dependency-channel epidemic threshold
+        \RQTwoLockFactor$\times$ and \RQTwoScriptsFactor$\times$. With stealable tokens, however, the
+        threshold in the dependency transmission rate collapses to the bottom of our grid.
+  \item Reactive patching prevents almost all spread if the worm is detected within an hour, but only
+        \RQThreeHubPatchingTwentyFour{} after a realistic 24-hour detection lag. Proactively immunizing
+        the same number of high-degree packages still prevents \RQThreeHubImmunizationTwentyFour.
+\end{itemize}
+Credential hardening and proactive protection of central packages therefore matter more than dependency
+pinning.
+\end{abstract}

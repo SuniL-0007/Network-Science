@@ -1,0 +1,125 @@
+\section{Model}\label{sec:model}
+
+\subsection{Contagion graph}
+Let $G_{\text{dep}}=(V,E)$ contain an edge $u\to v$ whenever package $u$ depends on $v$. Malicious code
+flows against this arrow: a compromised $v$ exposes every $u$ that installs it. Our contagion graph is
+therefore the reversal $G=G_{\text{dep}}^{\top}$, with edges $v\to u$. Each node is susceptible (S),
+infected (I) or recovered (R). Here \emph{infected} means that the package has published a malicious
+version, and \emph{recovered} means that it has been patched, unpublished or protected.
+\Cref{fig:model} shows both contagion channels.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  pkg/.style={draw, rounded corners=2pt, minimum width=1.25cm, minimum height=0.55cm, font=\small},
+  inf/.style={pkg, fill=orange!25},
+  dep/.style={-{Latex[length=2mm]}, thick},
+  cred/.style={-{Latex[length=2mm]}, thick, dashed, blue!70!black},
+  lab/.style={font=\scriptsize, midway, fill=white, inner sep=1pt}]
+  \node[inf] (v) {$v$};
+  \node[pkg, right=2.2cm of v] (u) {$u$};
+  \node[pkg, below=0.9cm of u] (w1) {$w_1$};
+  \node[pkg, right=0.4cm of w1] (w2) {$w_2$};
+  \node[font=\small, right=0.15cm of w2] (dots) {$\cdots$};
+  \node[draw, circle, inner sep=1pt, font=\small, above=0.6cm of $(u)!0.5!(w2)$, xshift=1.4cm] (m) {$m$};
+  \draw[dep] (v) -- node[lab, above=2pt] {$\beta\, w_{\text{semver}}\, w_{\text{exec}}(u)$} (u);
+  \draw[cred] (u) to[bend left=15] node[lab, above right=-1pt] {token, $\beta_m$} (m);
+  \draw[cred] (m) -- (w1);
+  \draw[cred] (m) -- (w2);
+  \node[font=\scriptsize, below=0.25cm of w1, xshift=0.8cm] {republish $\leq$ cap packages of $m$};
+  \begin{scope}[on background layer]
+    \node[draw=gray!50, dashed, rounded corners, fit=(u)(w1)(w2)(dots)(m), inner sep=6pt,
+          label={[font=\scriptsize, gray]above:maintainer $m$'s packages}] {};
+  \end{scope}
+\end{tikzpicture}
+\caption{The two contagion channels. In the dependency channel (solid), compromised $v$ infects
+dependent $u$ when $u$'s maintainer installs it and the injected install script runs. In the credential
+channel (dashed), an infected package leaks its maintainer's token, and the worm republishes up to a
+capped number of that maintainer's other packages.}
+\label{fig:model}
+\end{figure}
+
+\subsection{Dependency channel}
+In each discrete tick, every infected $v$ infects each susceptible successor $u$ independently with
+probability
+\begin{equation}
+  \beta_{vu} = \min\bigl(1,\; \beta \cdot w_{\text{semver}}(v,u) \cdot w_{\text{exec}}(u) \cdot w_{\text{prov}}(u)\bigr).
+  \label{eq:beta}
+\end{equation}
+The three weights are:
+\begin{itemize}
+  \item \textbf{SemVer weight.} $w_{\text{semver}}$ encodes how readily $u$'s constraint accepts an
+        automatic malicious release: exact $0.05$, tilde $0.85$, caret and wildcard $1.0$.
+  \item \textbf{Script execution.} The worm injects its own lifecycle script into every package it
+        republishes, so every infected source carries the payload. What varies is the consumer:
+        $w_{\text{exec}}(u)=0.1$ if $u$'s maintainers or CI block lifecycle scripts, and $1$ otherwise.
+        The residual $0.1$ covers runtime execution paths. In the status quo we assume 10\% of
+        packages block scripts, reflecting pnpm~$\geq$10, Bun and \texttt{--ignore-scripts} users. The
+        blocking sets are nested across regimes. The original static formulation, which boosts packages
+        that \emph{declare} install scripts, made script blocking ineffective by construction; we keep
+        it only as a variant.
+  \item \textbf{Provenance.} $w_{\text{prov}}(u)$ is a provenance factor applied in hardened regimes
+        (\cref{sec:rq2}).
+\end{itemize}
+
+\subsection{Credential channel}
+In each tick, every infected package leaks each of its not-yet-compromised maintainers' tokens with
+probability $\beta_m$. A compromised maintainer has up to $c$ of their packages republished in the next
+tick, chosen at random; packages with provenance are republished with probability $w_{\text{prov}}$.
+The cap $c$ mirrors the observed limits of 20 (wave~1) and 100 (wave~2) packages per token.
+
+\subsection{Recovery, interventions and metrics}
+\paragraph{Recovery.} Infected packages recover with probability $\gamma$ per tick from the
+\emph{detection tick} onward. Nobody patches a worm that has not yet been discovered. One tick
+corresponds to one hour.
+
+\paragraph{Interventions.} An intervention policy moves up to $B$ nodes per tick to R from the detection
+tick onward. It can target infected nodes uniformly at random (\emph{random patching}) or in order of
+contagion out-degree (\emph{hub patching}). Alternatively, a set of $K$ nodes is immunized at $t=0$, in
+one of three ways:
+\begin{itemize}
+  \item \emph{firebreak}: highest betweenness;
+  \item \emph{hub}: highest out-degree;
+  \item \emph{acquaintance}: random neighbours of random nodes~\citep{cohen2003acquaintance}.
+\end{itemize}
+
+\paragraph{Metrics.} The final outbreak size $\Rinf$ is the fraction of packages \emph{ever} infected.
+It excludes immunized and patched nodes, which would otherwise inflate $|R(\infty)|$ precisely when
+defences work. We also report:
+\begin{itemize}
+  \item $T_{80}$: the time to infect 80\% of the patient zero's dependency-reachable set;
+  \item $T_{90}$: the time to reach 90\% of a run's final size, i.e.\ the plateau;
+  \item peak prevalence;
+  \item infection-tree depth;
+  \item the share of infections caused by the credential channel;
+  \item the probability of a major outbreak ($\Rinf\geq5\%$).
+\end{itemize}
+
+\subsection{Simulation and statistics}
+Each configuration is run 100 times (50 for the RQ2 grids). Run $i$ of a configuration uses child $i$
+of a NumPy \pkg{SeedSequence}. Configurations that share a seed are therefore \emph{paired}: run $i$
+gets the same patient-zero draw and random stream across strategies and regimes. Outbreak sizes are
+bimodal, so we report percentile-bootstrap 95\% confidence intervals and give the probability of a major
+outbreak separately from its size. Paired reductions use a paired bootstrap.
+
+The engine is vectorised over a CSR representation of $G$, so 100 runs on the 10k graph take about one
+second. We cross-validated it against NDlib's SIR model~\citep{rossetti2018ndlib}: with homogeneous
+weights, mean outbreak sizes agree within sampling error.
+
+\begin{table}[t]
+\centering
+\caption{Parameters. Ticks are hours. SH1 and SH2 values are calibrated in \cref{sec:calibration}.
+Patching starts at the detection tick.}
+\label{tab:params}
+\begin{tabular}{llccc}
+\toprule
+Symbol & Meaning & Spec reference & SH1-calibrated & SH2-calibrated \\
+\midrule
+$\beta$ & dependency transmission & 0.15 & \CalOneBeta & \CalTwoBeta \\
+$\beta_m$ & token leak per maintainer and tick & 0 & \CalOneBetaM & \CalTwoBetaM \\
+$\gamma$ & patching rate after detection & 0.05 & \CalOneGamma & \CalTwoGamma \\
+$c$ & packages republished per token & 20 & \CalOneCap & \CalTwoCap \\
+$t_{\text{det}}$ & detection tick (h) & 0 & \CalOneDetect & \CalTwoDetect \\
+\bottomrule
+\end{tabular}
+\end{table}

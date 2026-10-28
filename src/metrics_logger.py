@@ -205,17 +205,20 @@ def estimate_threshold(
     by: Sequence[str] = ("regime", "gamma"),
     metric: str = "r_inf_mean",
     level: float = 0.05,
+    x: str = "beta",
 ) -> pd.DataFrame:
-    """Empirical epidemic threshold per group: smallest beta where `metric` crosses `level`.
+    """Empirical epidemic threshold per group: smallest `x` (default beta) where `metric`
+    crosses `level`.
 
-    Linear interpolation between grid points; tau_c = beta_c / gamma. NaN when the metric
-    never crosses (always below: no epidemic; already above at the smallest beta: < grid).
+    Linear interpolation between grid points; tau_c = x_c / gamma. NaN when the metric
+    never crosses (always below: no epidemic; already above at the smallest x: < grid).
+    Results are reported in columns `beta_c`/`tau_c` whatever `x` is.
     """
     rows = []
     for key, grp in summary.groupby(list(by), sort=False):
         key = key if isinstance(key, tuple) else (key,)
-        g = grp.sort_values("beta")
-        b, y = g["beta"].to_numpy(float), g[metric].to_numpy(float)
+        g = grp.sort_values(x)
+        b, y = g[x].to_numpy(float), g[metric].to_numpy(float)
         above = np.flatnonzero(y >= level)
         if len(above) == 0 or above[0] == 0:
             beta_c = math.nan if len(above) == 0 else float(b[0])
