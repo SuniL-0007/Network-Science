@@ -11,7 +11,7 @@ Parts (each writes <tag>_rq<k>_*.csv to results/metrics/):
   seeds        synthetic ensemble, seeds 1-5: RQ1-RQ3
   sizes        npm 5k and full closure (14,624 after spam cleaning): RQ1-RQ3
   null         5 degree-preserving rewirings of npm 10k: RQ1, RQ3
-  sensitivity  RQ1, RQ3 around SH1 on npm 10k: beta x gamma
+  sensitivity  RQ1, RQ3 around SH1 on npm 10k: beta x gamma (50 runs per configuration)
 
 Usage:  python -m src.paper_suite all --jobs 7
 """
@@ -90,9 +90,12 @@ def part_null(cfg: ExperimentConfig) -> None:
     run_null_models(_graph_path(NPM_10K), 5, replace(cfg, keep_curves=False), rqs=(1, 3))
 
 
+SENSITIVITY_RUNS = 50  # half the main run count: enough to rank strategies, halves the compute
+
+
 def part_sensitivity(cfg: ExperimentConfig) -> None:
     run_sensitivity(_graph_path(NPM_10K), [0.01, 0.02, 0.05], [0.05, 0.1, 0.2],
-                    replace(cfg, keep_curves=False), base=SH1)
+                    replace(cfg, keep_curves=False, n_runs=SENSITIVITY_RUNS), base=SH1)
 
 
 def part_credential(cfg: ExperimentConfig) -> None:

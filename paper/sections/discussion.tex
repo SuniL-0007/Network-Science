@@ -15,7 +15,8 @@ Our results point to a clear order of priorities.
         while tokens remain stealable.
   \item \textbf{Proactive protection over reactive patching.} With limited response capacity and
         detection lags of a day, protecting the most-depended-upon packages in advance beats chasing
-        infected ones. Degree is a better target than betweenness under the credential channel.
+        infected ones. At realistic budgets degree is a better target than betweenness; at very large
+        budgets the two converge.
 \end{enumerate}
 Lockfiles have a known cost: they slow the uptake of security fixes~\citep{pinckney2023semver}. And as
 the s1ngularity and Mini Shai-Hulud incidents show, trusted publishing does not protect against a

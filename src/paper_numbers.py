@@ -18,7 +18,7 @@ import numpy as np
 import pandas as pd
 
 from src.config import METRICS_DIR, PROJECT_ROOT, RAW_DIR
-from src.paper_suite import SH1, SH2
+from src.paper_suite import SENSITIVITY_RUNS, SH1, SH2
 
 OUT = PROJECT_ROOT / "paper" / "generated"
 PENDING = r"\textbf{[pending]}"
@@ -49,15 +49,15 @@ def pct(x, digits: int = 0) -> str | None:
     return None if x is None or not math.isfinite(x) else f"{100 * x:.{digits}f}\\%"
 
 
-def read(tag: str, table: str, full: bool = True) -> pd.DataFrame | None:
-    """Load <tag>_<table>.csv; None if absent or (for rq tables) not a full run."""
+def read(tag: str, table: str, full: bool = True, runs: int = FULL_RUNS) -> pd.DataFrame | None:
+    """Load <tag>_<table>.csv; None if absent or (for rq tables) not run with `runs` runs."""
     path = METRICS_DIR / f"{tag}_{table}.csv"
     if not path.exists():
         return None
     rq = re.match(r"(rq\w+?)_", table)
     if full and rq:
         meta = METRICS_DIR / f"{tag}_{rq.group(1)}_meta.json"
-        if not meta.exists() or json.loads(meta.read_text(encoding="utf-8"))["config"]["n_runs"] != FULL_RUNS:
+        if not meta.exists() or json.loads(meta.read_text(encoding="utf-8"))["config"]["n_runs"] != runs:
             return None
     return pd.read_csv(path, keep_default_na=False, na_values=[""])
 
@@ -257,6 +257,13 @@ def rq2() -> None:
         write_table("tab_rq2b", PENDING + "\n")
         return
     macro("RQTwoBDone", "")
+    t = t2b.set_index(["regime", "gamma"])["beta_m_c"]
+    for reg, k in (("status_quo", "SQ"), ("strict_lockfile", "SL"), ("scripts_disabled", "SD"), ("hardened", "Hard")):
+        for g, gk in ((0.1, "Mid"), (0.4, "High")):
+            if (reg, g) in t.index:
+                macro(f"RQTwoB{k}{gk}", num(t[(reg, g)], 3))
+    if ("hardened", 0.1) in t.index and ("status_quo", 0.1) in t.index:
+        macro("RQTwoBHardFactor", num(t[("hardened", 0.1)] / t[("status_quo", 0.1)], 0))
     gammas = sorted(t2b["gamma"].unique())
     rows = []
     for reg, label in REGIME_LABEL.items():
@@ -307,6 +314,26 @@ def rq3(tag: str = MAIN, budget_frac: float = 0.005) -> None:
             macro(f"RQThreeNone{word}", pct(none.get(x, np.nan)))
 
 
+def rq3_budget_crossover(tag: str = MAIN) -> None:
+    red = read(tag, "rq3_reductions")
+    if red is None:
+        return
+    n = topo(tag)["n_nodes"]
+    x = red[red["delay"] == 24].pivot_table(index="budget", columns="strategy", values="delta_r_inf")
+    k = red[(red["delay"] == 24) & (red["strategy"] == "hub_immunize")].set_index("budget")["k_immunized"]
+    bmax = x.index.max()
+    macro("RQThreeMaxBudget", num(int(bmax)))
+    macro("RQThreeMaxBudgetPct", pct(bmax / n, 1))
+    macro("RQThreeMaxK", num(int(k[bmax])))
+    macro("RQThreeHubImmMaxBudget", pct(x.loc[bmax, "hub_immunize"]))
+    macro("RQThreeFirebreakMaxBudget", pct(x.loc[bmax, "firebreak_immunize"]))
+    b50 = k.index[(k.index.to_series() - 50).abs().argmin()]
+    macro("RQThreeKAtBudget", num(int(k[b50])))
+    macro("RQThreeKAtBudgetPct", pct(k[b50] / n, 1))
+    wins = [b for b in x.index if x.loc[b, "hub_immunize"] > x.loc[b, "firebreak_immunize"]]
+    macro("RQThreeDegreeWinsUpTo", pct(max(wins) / n, 1) if wins else None)
+
+
 def robustness() -> None:
     # synthetic ensemble: hub/leaf contrast and RQ3 ranking per seed (SH1 scenario)
     hub_leaf, ranks = [], []
@@ -352,6 +379,23 @@ def robustness() -> None:
         dep = rs[rs["scenario"] == "dependency_only"].set_index("group")
         rows.append(f"{label} & {pct(dep.loc['hub', 'r_inf_mean'], 1)} & {pct(d.loc['hub', 'r_inf_mean'], 1)} & "
                     f"{pct(d.loc['leaf', 'r_inf_mean'], 1)} & {best} \\\\")
+    nulls = [read(f"{MAIN}_null{k}", "rq1_summary") for k in range(5)]
+    nulls = [n for n in nulls if n is not None]
+    if nulls:
+        dep = [n[(n["scenario"] == "dependency_only") & (n["group"] == "hub")]["r_inf_mean"].iloc[0] for n in nulls]
+        leaf = [n[(n["scenario"] == "SH1_calibrated") & (n["group"] == "leaf")]["r_inf_mean"].iloc[0] for n in nulls]
+        macro("NullCount", num(len(nulls)))
+        macro("NullDepHubMin", pct(min(dep), 1))
+        macro("NullDepHubMax", pct(max(dep), 1))
+        macro("NullLeafMin", pct(min(leaf), 0))
+        macro("NullLeafMax", pct(max(leaf), 0))
+    sizes = {}
+    for tag, key in (("npm_hi_n5k_contagion", "Five"), (MAIN, "Main"), ("npm_hi_n14660_contagion", "Full")):
+        rs = read(tag, "rq1_summary")
+        if rs is not None:
+            sizes[key] = rs[(rs["scenario"] == "SH1_calibrated") & (rs["group"] == "leaf")]["r_inf_mean"].iloc[0]
+    for key, v in sizes.items():
+        macro(f"Size{key}LeafShOne", pct(v, 1))
     write_table("tab_robustness", "\n".join([
         r"\begin{tabular}{lcccl}", r"\toprule",
         r" & Hub $R_\infty$ & Hub $R_\infty$ & Leaf $R_\infty$ & Best RQ3 strategy \\",
@@ -363,7 +407,8 @@ def robustness() -> None:
     for b in (0.01, 0.02, 0.05):
         for g in (0.05, 0.1, 0.2):
             t = f"{MAIN}_sens_b{b:g}_g{g:g}"
-            rs, rr = read(t, "rq1_summary"), read(t, "rq3_reductions")
+            rs = read(t, "rq1_summary", runs=SENSITIVITY_RUNS)
+            rr = read(t, "rq3_reductions", runs=SENSITIVITY_RUNS)
             if rs is None or rr is None:
                 sens.append(None)
                 continue
@@ -389,6 +434,7 @@ def main() -> None:
     rq1()
     rq2()
     rq3()
+    rq3_budget_crossover()
     robustness()
     lines = ["% Generated by `python -m src.paper_numbers` -- do not edit by hand.",
              r"\providecommand{\pending}{" + PENDING + "}"]

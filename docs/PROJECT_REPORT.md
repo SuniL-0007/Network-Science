@@ -43,14 +43,18 @@ written to be read on its own, with no code knowledge needed.
   drove the spread.
 - **Key findings.**
   1. **RQ1.** With dependencies alone, only hubs cause outbreaks, and only small ones (about 3–5% of the
-     core); leaf packages cause none. With stolen tokens, even a leaf package reaches **20–55%** of the
-     core.
+     core); leaf packages cause none. With stolen tokens, even a leaf package reaches **8–55%** of the
+     graph, depending on graph size and calibration.
   2. **RQ2.** Lockfiles raise the epidemic threshold **12×** and blocking install scripts **6×**, but
-     only while tokens cannot be stolen. With stolen tokens, the threshold in the dependency
-     transmission rate disappears.
+     only while tokens cannot be stolen. With stolen tokens, the threshold that matters is the
+     token-leak rate. Hardening raises it **7×**, yet the calibrated worms leak tokens faster than every
+     regime can absorb, except hardening combined with fast patching for wave-1-like worms.
   3. **RQ3.** Reactive patching works if the worm is detected within hours, but prevents only **13%** of
      the outbreak after a 24-hour delay. **Immunizing hubs in advance** prevents about **42%** at the
-     same cost. Degree-based targeting beats betweenness-based "firebreaks".
+     same cost. Degree-based targeting beats betweenness-based "firebreaks" at realistic budgets; at
+     very large budgets the two converge.
+  4. **Robustness.** Randomly rewiring npm while keeping every package's degrees makes outbreaks
+     *larger*, so npm's real layered structure dampens spread.
 - **Takeaway for defenders:** break the credential channel first (short-lived tokens, trusted
   publishing), then harden dependencies, and protect central packages in advance.
 
@@ -295,6 +299,9 @@ Mean share of the core ever infected (1,000 runs per group):
 - **With tokens** a leaf package can take over much of the core. Outbreaks become bimodal: they either
   fizzle before a token leaks or explode. Origin changes the *probability* of take-off more than the
   final size.
+- **Graph size matters for the leaf figure.** These are shares of the 10k graph. Under SH1, leaf
+  outbreaks reach 22.4% of the 5k sample, 19.6% of the 10k graph and 7.8% of the full closure (roughly
+  1,100–2,000 packages in absolute terms), so treat it as a range.
 
 ### RQ2: Which defences raise the epidemic threshold?
 
@@ -312,7 +319,23 @@ Critical transmission rate βc (where mean R∞ reaches 5%), dependencies only, 
 - Dependency-side hardening clearly works while tokens are safe.
 - **With stolen tokens** at the calibrated rates, βc drops to the bottom of our grid (0.001) in 75% of
   cases: the credential channel sustains the epidemic on its own. The threshold that matters is then
-  the **token-leak rate β_m**. This "RQ2b" analysis is still computing.
+  the **token-leak rate β_m**.
+
+**RQ2b: critical token-leak rate β_m,c** (β fixed at the SH1 value):
+
+| Regime | γ = 0.02 | γ = 0.05 | γ = 0.1 | γ = 0.2 | γ = 0.4 |
+|---|---|---|---|---|---|
+| Status quo | ≤0.001 | 0.001 | 0.002 | 0.008 | 0.020 |
+| Strict lockfile | 0.001 | 0.002 | 0.005 | 0.015 | 0.031 |
+| Scripts disabled | ≤0.001 | 0.001 | 0.004 | 0.012 | 0.028 |
+| Hardened | 0.002 | 0.006 | 0.015 | 0.038 | 0.087 |
+
+- Faster patching and hardening both raise the threshold; hardening raises it about **7×** at γ = 0.1.
+- The calibrated **wave-2** worm (β_m = 0.1) is above the threshold of **every** regime.
+- The calibrated **wave-1** worm (β_m = 0.02) is about **10×** above the status-quo threshold at
+  γ = 0.1. It falls below threshold only with fast patching: at γ = 0.2 only when hardened, and at
+  γ = 0.4 also with lockfiles or disabled scripts.
+- So dependency-side hardening helps against stolen tokens too, but not enough on its own.
 
 ### RQ3: Patch reactively or immunize proactively?
 
@@ -332,10 +355,13 @@ budget for every strategy):
 - **Fast detection: react.** Within an hour, patching contains almost everything.
 - **Slow detection: protect in advance.** The two approaches cross over between 12 and 24 hours of
   delay, and wave 1 took about 24 hours to detect.
-- **Degree beats betweenness.** This surprised us, since the original spec expected betweenness
-  "firebreaks" to win. A plausible reason is that stolen tokens bypass the dependency paths that
-  betweenness cuts. Optimised immunization sets could do better than either heuristic, so we don't claim
-  optimality.
+- **Degree beats betweenness at realistic budgets.** This surprised us, since the original spec expected
+  betweenness "firebreaks" to win. Matching budgets is costly: at 50 per hour, proactive strategies
+  immunize 1,253 packages (12.5% of the graph). Degree wins at every budget up to 1% of packages per
+  hour. Only at the largest budget we tested (2.5% per hour, 2,649 packages) does betweenness edge
+  ahead (65% vs 62%). A plausible reason for degree's advantage is that stolen tokens bypass the
+  dependency paths that betweenness cuts. Optimised immunization sets could beat both heuristics, so we
+  don't claim optimality.
 
 ---
 
@@ -344,10 +370,10 @@ budget for every strategy):
 | Check | Status | Result so far |
 |---|---|---|
 | 6 synthetic graphs (different seeds) | ✅ done | Hub immunization is the best response in 6 of 6; hubs reach 38 ± 5%, leaves 5 ± 3% |
-| Sample size (5k / 10k / full closure) | ✅ done | Same qualitative pattern |
-| 5 degree-preserving rewirings (null models) | ⏳ running | Does npm's exact wiring matter beyond its degrees? |
-| β × γ sensitivity around SH1 (9 settings) | ⏳ running | Is the RQ3 ranking stable? |
-| RQ2b: critical token-leak rate per regime | ⏳ running | Which regime survives stolen tokens? |
+| Sample size (5k / 10k / full closure) | ✅ done | Same qualitative pattern; SH1 leaf reach 22% / 20% / 8% of the graph |
+| Degree-preserving rewirings (null models) | ✅ 4 of 5 done, last running | Rewired graphs spread **more**: dependency-only hubs 7.6–8.1% vs 2.6%; SH1 leaves 32–43% vs 20%. npm's real wiring dampens outbreaks |
+| β × γ sensitivity around SH1 (9 settings, 50 runs each) | ⏳ running | Is the RQ3 ranking stable? |
+| RQ2b: critical token-leak rate per regime | ✅ done | See RQ2 above: hardening raises it 7×, still not enough for SH2 |
 
 The remaining runs execute in the background with resume support. Once they finish,
 `python -m src.paper_numbers` updates every number in the paper.
@@ -389,8 +415,9 @@ Real projects hit snags. These were the instructive ones:
 4. **The spam ring** (Section 5) dominated the spectral analysis until we filtered it out.
 5. **The hook model** produced a "scripts disabled" effect of zero, which contradicted the real incident.
    This led to the worm-injected redesign.
-6. **Firebreaks lost.** After calibration, the spec's hypothesis that betweenness firebreaks win did not
-   hold. We report it as it came out.
+6. **Firebreaks lost, mostly.** After calibration, the spec's hypothesis that betweenness firebreaks
+   win held only at the very largest budget; at realistic budgets degree-based immunization wins. We
+   report it as it came out.
 7. **Memory limits.** On a 7.7 GB laptop, long parallel runs were stopped for using too much memory. We
    added resumable runs that skip finished work, but only if its saved settings match the current run.
    An earlier version of the resume check accepted leftover 1-run smoke-test files as finished, so we

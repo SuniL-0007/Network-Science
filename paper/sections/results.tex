@@ -103,6 +103,14 @@ falls to the bottom of our grid (0.001) in \RQTwoCredCollapsed{} of regime--$\ga
 credential channel alone sustains the epidemic, so the relevant threshold is in $\beta_m$, not $\beta$.
 \Cref{tab:rq2b} reports the critical $\beta_m$ per regime at the SH1 transmission rate.
 \RQTwoBDone
+The critical token-leak rate rises with the patching rate, and hardening raises it about
+\RQTwoBHardFactor$\times$ at $\gamma=0.1$ (from \RQTwoBSQMid{} to \RQTwoBHardMid). The SH2 rate ($\beta_m=\CalTwoBetaM$) exceeds the threshold of every regime at every patching rate we
+tried. The SH1 rate ($\beta_m=\CalOneBetaM$) is above threshold in the status quo except at the fastest
+patching rate, where it sits at the threshold ($\beta_{m,c}=\RQTwoBSQHigh$ at $\gamma=0.4$). It falls
+below threshold only with fast patching: at $\gamma=0.2$ only in the hardened regime, and at
+$\gamma=0.4$ also with strict lockfiles (\RQTwoBSLHigh) or disabled scripts (\RQTwoBSDHigh). Dependency-side defences thus shift the
+credential threshold too, but not by enough to stop a worm that leaks tokens as readily as the real
+ones did.
 
 \begin{table}[t]
 \centering
@@ -146,15 +154,20 @@ prevents \RQThreeHubPatchingOne). Its value drops quickly with delay: \RQThreeHu
 at 6\,h, \RQThreeHubPatchingTwelve{} at 12\,h, and only \RQThreeHubPatchingTwentyFour{} at 24\,h, which
 was the lag of wave~1.
 
-\paragraph{Proactive immunization holds up, and degree beats betweenness.}
+\paragraph{Proactive immunization holds up.}
 Immunizing high-degree packages at the same total cost prevents \RQThreeHubImmunizationTwelve{} at 12\,h
 and \RQThreeHubImmunizationTwentyFour{} at 24\,h. The two approaches cross over between 12 and 24\,h of
 delay: reactive patching is still ahead at 12\,h, and proactive immunization is well ahead at 24\,h and
 48\,h. Acquaintance immunization, which needs no global knowledge, comes close
 (\RQThreeAcquaintanceTwentyFour{} at 24\,h).
 
-Betweenness ``firebreaks'' are weaker under the credential channel (\RQThreeFirebreakBetweennessTwentyFour{}
-at 24\,h). A plausible explanation is that betweenness targets packages that cut dependency paths,
+\paragraph{Degree beats betweenness at realistic budgets.}
+At $B=\RQThreeBudget$ per hour, matching costs means immunizing $K=\RQThreeKAtBudget$ packages
+(\RQThreeKAtBudgetPct{} of the graph). At this budget betweenness ``firebreaks'' prevent only
+\RQThreeFirebreakBetweennessTwentyFour{} at 24\,h. Degree-based immunization wins at every budget up to
+\RQThreeDegreeWinsUpTo{} of packages per hour. Only at the largest budget we tested (\RQThreeMaxBudgetPct{}
+per hour, $K=\RQThreeMaxK$) does betweenness edge ahead (\RQThreeFirebreakMaxBudget{} vs.\
+\RQThreeHubImmMaxBudget). A plausible explanation is that betweenness targets packages that cut dependency paths,
 whereas under the credential channel most infections bypass those paths through stolen tokens; we have
 not tested this mechanism directly. Betweenness is a heuristic; optimized immunization sets could do
 better~\citep{schneider2011limited}. Our claim is therefore limited to the comparison with degree-based

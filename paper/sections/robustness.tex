@@ -29,7 +29,25 @@ runs per origin group.}
 \input{generated/tab_robustness}
 \end{table}
 
+Three patterns stand out in \cref{tab:robustness}:
+\begin{itemize}
+  \item \textbf{npm's wiring dampens spread.} The \NullCount{} rewired graphs produce \emph{larger}
+        outbreaks than the real one. Dependency-only hub outbreaks reach
+        \NullDepHubMin--\NullDepHubMax{} instead of \RQOneDepOnlyHub, and SH1 leaf outbreaks reach
+        \NullLeafMin--\NullLeafMax{} instead of \RQOneShOneLeaf. Random rewiring destroys npm's layered,
+        nearly acyclic structure and creates cycles, so the real topology is protective relative to its
+        degree sequence alone.
+  \item \textbf{The leaf effect is a share of the graph.} SH1 leaf outbreaks reach \SizeFiveLeafShOne{},
+        \SizeMainLeafShOne{} and \SizeFullLeafShOne{} of the 5k, 10k and full-closure graphs. In absolute terms that is between roughly 1{,}100 and 2{,}000 packages, so the
+        share does not scale simply with graph size. We therefore report the leaf effect as a range
+        rather than a single figure.
+  \item \textbf{The RQ3 ranking is stable.} Proactive immunization beats reactive patching at a 24\,h
+        delay on every variant. Which proactive heuristic is best at the largest budget varies between
+        graphs (degree, betweenness or acquaintance), consistent with the convergence of the strategies
+        at large $K$ in \cref{sec:rq3}.
+\end{itemize}
+
 \paragraph{Parameter sensitivity.}
-Around the SH1 calibration we vary $\beta\in\{0.01,0.02,0.05\}$ and $\gamma\in\{0.05,0.1,0.2\}$. A
+Around the SH1 calibration (50 runs per setting) we vary $\beta\in\{0.01,0.02,0.05\}$ and $\gamma\in\{0.05,0.1,0.2\}$. A
 proactive strategy is the best RQ3 response at 24\,h delay in \SensProactiveBest{} of the nine
 settings. The hub-to-leaf ratio of $\Rinf$ ranges from \SensHubLeafMin{} to \SensHubLeafMax.

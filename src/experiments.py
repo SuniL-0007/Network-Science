@@ -397,12 +397,12 @@ def run_experiments(ctx: ExperimentContext, rqs=(1, 2, 3), cfg: ExperimentConfig
     out = {}
     for k in rqs:
         if cfg.skip_existing and rq_done(ctx.tag, k, out_dir, cfg):
-            log.info("RQ%d for %s already done, skipping", k, ctx.tag)
+            log.info("RQ%s for %s already done, skipping", k, ctx.tag)
             continue
         tables = RUNNERS[k](ctx, cfg)
         meta = {"tag": ctx.tag, "rq": k, "n_nodes": ctx.model.n, "config": asdict(cfg)}
         paths = write_tables(tables, f"{ctx.tag}_rq{k}", out_dir, meta)
-        log.info("RQ%d written: %s", k, ", ".join(p.name for p in paths.values()))
+        log.info("RQ%s written: %s", k, ", ".join(p.name for p in paths.values()))
         out[k] = tables
     return out
 
