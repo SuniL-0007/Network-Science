@@ -10,9 +10,10 @@
 \usepackage{multirow}
 \usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
 \usepackage[numbers,sort&compress]{natbib}
-\usepackage{url}
+\usepackage{xurl}
+\usepackage{microtype}
 \usepackage[hidelinks]{hyperref}
 \usepackage[capitalise,noabbrev]{cleveref}
 \usepackage{caption}
@@ -24,6 +25,8 @@
 
 \newcommand{\Rinf}{R_\infty}
 \newcommand{\pkg}[1]{\texttt{#1}}
+% table cell: main value on top, confidence interval below in small type
+\newcommand{\cistack}[2]{\begin{tabular}[t]{@{}c@{}}#1\\[-1pt]{\scriptsize #2}\end{tabular}}
 
 \title{Super-Spreaders, Firebreaks and Stolen Tokens:\\
 SIR Modelling of Self-Propagating Worms in the npm Dependency Network}

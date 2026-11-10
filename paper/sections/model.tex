@@ -17,18 +17,19 @@ version, and \emph{recovered} means that it has been patched, unpublished or pro
   cred/.style={-{Latex[length=2mm]}, thick, dashed, blue!70!black},
   lab/.style={font=\scriptsize, midway, fill=white, inner sep=1pt}]
   \node[inf] (v) {$v$};
-  \node[pkg, right=2.2cm of v] (u) {$u$};
+  \node[pkg, right=2.8cm of v] (u) {$u$};
   \node[pkg, below=0.9cm of u] (w1) {$w_1$};
   \node[pkg, right=0.4cm of w1] (w2) {$w_2$};
   \node[font=\small, right=0.15cm of w2] (dots) {$\cdots$};
   \node[draw, circle, inner sep=1pt, font=\small, above=0.6cm of $(u)!0.5!(w2)$, xshift=1.4cm] (m) {$m$};
   \draw[dep] (v) -- node[lab, above=2pt] {$\beta\, w_{\text{semver}}\, w_{\text{exec}}(u)$} (u);
-  \draw[cred] (u) to[bend left=15] node[lab, above right=-1pt] {token, $\beta_m$} (m);
+  \draw[cred] (u) to[bend left=30] node[lab, above=1pt, pos=0.45] {token, $\beta_m$} (m);
   \draw[cred] (m) -- (w1);
   \draw[cred] (m) -- (w2);
   \node[font=\scriptsize, below=0.25cm of w1, xshift=0.8cm] {republish $\leq$ cap packages of $m$};
   \begin{scope}[on background layer]
-    \node[draw=gray!50, dashed, rounded corners, fit=(u)(w1)(w2)(dots)(m), inner sep=6pt,
+    \coordinate (top) at ($(m.north)+(0,0.45)$); % headroom for the token label
+    \node[draw=gray!50, dashed, rounded corners, fit=(u)(w1)(w2)(dots)(m)(top), inner sep=6pt,
           label={[font=\scriptsize, gray]above:maintainer $m$'s packages}] {};
   \end{scope}
 \end{tikzpicture}

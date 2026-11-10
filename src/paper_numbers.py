@@ -186,6 +186,15 @@ SCEN_KEY = {"spec_reference": "SpecRef", "dependency_only": "DepOnly",
 GROUPS = ("hub", "bridge", "mid", "leaf")
 
 
+def _rq1_cell(row) -> str:
+    """Mean and P(major) on top, CI underneath (\\cistack is defined in main.tex)."""
+    m, lo, hi = row["r_inf_mean"], row["r_inf_ci_lo"], row["r_inf_ci_hi"]
+    if not all(map(math.isfinite, (m, lo, hi))):
+        return "--"
+    return (f"\\cistack{{{pct(m, 1)} ({pct(row['p_major'])})}}"
+            f"{{[{pct(lo, 1)}, {pct(hi, 1)}]}}")
+
+
 def rq1(tag: str = MAIN, prefix: str = "RQOne") -> None:
     s = read(tag, "rq1_summary")
     if s is None:
@@ -195,8 +204,7 @@ def rq1(tag: str = MAIN, prefix: str = "RQOne") -> None:
         d = s[s["scenario"] == scen].set_index("group")
         if d.empty:
             continue
-        cells = [ci(d.loc[g], "r_inf", as_pct=True) + f" ({pct(d.loc[g, 'p_major'])})" if g in d.index else "--"
-                 for g in GROUPS]
+        cells = [_rq1_cell(d.loc[g]) if g in d.index else "--" for g in GROUPS]
         rows.append(f"{SCEN_LABEL[scen]} & " + " & ".join(cells) + r" \\")
         k = SCEN_KEY[scen]
         for g in GROUPS:

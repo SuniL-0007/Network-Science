@@ -79,6 +79,9 @@ def _cref(match: re.Match) -> str:
 
 def preprocess(tex: str) -> str:
     tex = re.sub(r"\\[cC]ref\{([^}]*)\}", _cref, tex)
+    # Word tables have room for one line per cell: flatten the stacked CI cells.
+    tex = re.sub(r"\\newcommand\{\\cistack\}\[2\]\{.*\}\n",
+                 r"\\newcommand{\\cistack}[2]{#1 #2}\n", tex)
     # \paragraph is a run-in heading in LaTeX; keep it inline (and unnumbered).
     tex = re.sub(r"\\paragraph\{([^}]*)\}\s*", r"\\textbf{\1} ", tex)
     tex = re.sub(r"(\\includegraphics(?:\[[^\]]*\])?\{[^}]*)\.pdf\}", r"\1.png}", tex)
