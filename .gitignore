@@ -12,3 +12,7 @@ results/metrics/*
 ns-project-outline.md
 *.log
 data/raw/incidents/sources/
+
+# Presentation prep (local only)
+docs/PRESENTER_SCRIPT.md
+docs/TEAM_CONTRIBUTIONS.md
