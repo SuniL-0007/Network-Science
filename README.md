@@ -124,6 +124,8 @@ python -m src.calibration data/processed/npm_hi_n10k_contagion.pkl --runs 40 --j
 python -m src.validation
 # 3. every experiment (main, synthetic seeds, sample sizes, null models, sensitivity)
 python -m src.paper_suite all --jobs 7
+# 4. Word version of the paper (needs pandoc or `pip install pypandoc_binary`, plus python-docx)
+python paper/build_docx.py
 ```
 
 The crawl is a snapshot of a live registry (seed list: npm-high-impact 1.13.0; crawl date
